@@ -27,10 +27,18 @@ if ser.isOpen:
 def get_pos():
     ser.write('apg\r'.encode())
     line = ser.readline()
-    parse = line.decode().split()
-    print(parse)
-    
-    
+    if 'dwm'.encode() not in line and len(line) > 10:
+        parse = line.decode().split()
+        x_pos = parse[1]
+        
+        length = len(parse)
+        
+        #x_pos = parse[4]
+        print(x_pos)
+        return(parse)
+    else:
+        return()
+    time.sleep(.05)    
 def get_accel():
     accel = sense.get_accelerometer_raw()
     X = accel['x']
@@ -40,11 +48,10 @@ def get_accel():
     return(accel_list)
 
     
-    
 
 while True:
-   time_now= time.strftime("%H:%M:%S")
-   print(time_now)
-   get_pos()
+   time_now= time.strftime("%H:%M:%S")   
+   tag_pos = get_pos()
    accel = get_accel()
+   #print('At time {0} the tag is at location {1} and is accellerating at {2}'.format(time_now,tag_pos,accel)) 
    time.sleep(1)
