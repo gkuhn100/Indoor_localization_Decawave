@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Spyder Editor
 
-This is a temporary script file.
+This is a temporary script file. mmmmmm,
 """
 
 import serial
@@ -12,9 +12,10 @@ import time
 from sense_hat import SenseHat
 import numpy as np
 
-
 sense = SenseHat()
-
+A = np.array([[1,0],[0,1]])
+B = np.array([[.5,0],[.05,0]],dtype=float)
+W = np.array([[.05],[.05]])
 
 ser =  serial.Serial('/dev/ttyACM0',115200, timeout = 1)
 
@@ -36,8 +37,7 @@ def get_pos():
         parse = parse[1:]
         return(parse)
     else:
-        return()
-    #time.sleep(.05)    
+        return()   
 def get_accel():
     accel = sense.get_accelerometer_raw()
     X = accel['x']
@@ -45,13 +45,21 @@ def get_accel():
     Z = accel['z']
     accel_list = [X,Y,Z]
     return(accel_list)
-
     
-
+def predict_state(parse,accel_list):
+    tag_loc = np.array([[parse[0].strip('x:')],[parse[1].strip('y:')]],dtype=float)
+    accel = np.array([[accel_list[0]],[accel_list[1]]],dtype=float)
+    X_est = np.dot(A,tag_loc) + np.dot(B,accel)
+    print('And the state estimate is {0}'.format(X_est))
+    return(X_est)
 while True:
    time_now= time.strftime("%H:%M:%S")   
    tag_pos = get_pos()
    accel = get_accel()
+   
+   
    if tag_pos:
-       print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel)) 
-   time.sleep(1)
+       print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel))
+       loc = predict_state(tag_pos,accel)
+       print("\n")
+   time.sleep(.5)
