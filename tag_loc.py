@@ -14,8 +14,10 @@ import numpy as np
 
 sense = SenseHat()
 A = np.array([[1,0],[0,1]])
-B = np.array([[.5,0],[.05,0]],dtype=float)
+B = np.array([[.5,0],[.5,0]],dtype=float)
 W = np.array([[.05],[.05]])
+At= np.transpose(A)
+q = np.array([[.001,.001],[.002,.002]])
 
 ser =  serial.Serial('/dev/ttyACM0',115200, timeout = 1)
 
@@ -52,6 +54,14 @@ def predict_state(parse,accel_list):
     X_est = np.dot(A,tag_loc) + np.dot(B,accel)
     print('And the state estimate is {0}'.format(X_est))
     return(X_est)
+    
+def process_cov():
+    Pc= np.array([[.05,.05],[.05,.05]])
+    Pc = np.dot(A,Pc)
+    Pc = np.dot(Pc,At)+ W
+    print('Process covariance is)
+    return(Pc)
+    
 while True:
    time_now= time.strftime("%H:%M:%S")   
    tag_pos = get_pos()
@@ -61,5 +71,6 @@ while True:
    if tag_pos:
        print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel))
        loc = predict_state(tag_pos,accel)
+       pc = process_cov()
        print("\n")
    time.sleep(.5)
