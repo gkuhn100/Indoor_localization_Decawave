@@ -18,6 +18,8 @@ B = np.array([[.5,0],[.5,0]],dtype=float)
 W = np.array([[.05],[.05]])
 At= np.transpose(A)
 q = np.array([[.001,.001],[.002,.002]])
+H = np.array([[1,0],[0,1]])
+R = np.array([[.05,0],[0,.05]])
 
 ser =  serial.Serial('/dev/ttyACM0',115200, timeout = 1)
 
@@ -61,6 +63,14 @@ def process_cov():
     Pc = np.dot(Pc,At)+ W
     print('Process covariance is)
     return(Pc)
+
+ def KalmanGain(X_est,Pc):
+     Kg_num = np.dot(Pc,H)
+     Kg_den = np.dot(H,Pc)
+     Kg_den = np.dot(Kg_den,H) + R
+     Kg     = np.divide(Kg_num,Kg,den)
+     
+     return(Kg)
     
 while True:
    time_now= time.strftime("%H:%M:%S")   
