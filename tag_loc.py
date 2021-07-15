@@ -20,7 +20,7 @@ At= np.transpose(A)
 q = np.array([[.001,.001],[.002,.002]])
 H = np.array([[1,0],[0,1]])
 R = np.array([[.05,0],[0,.05]])
-
+C = np.array([[1,0],[0,1]])
 ser =  serial.Serial('/dev/ttyACM0',115200, timeout = 1)
 
 if ser.isOpen:
@@ -69,8 +69,18 @@ def process_cov():
      Kg_den = np.dot(H,Pc)
      Kg_den = np.dot(Kg_den,H) + R
      Kg     = np.divide(Kg_num,Kg,den)
-     
      return(Kg)
+  
+ def Observation(parse):
+      tag_loc = np.array([[parse[0].strip('x:')],[parse[1].strip('y:')]],dtype=float)
+      obs = np.dot(c,tag_loc)
+      return(obs)
+          
+  def currentstate(kg,obs,xest):
+      X_temp= obs - np.dot(H,X_est)
+      Xk = X_est + np.dot(Kg,X_est)
+      return(Xk)
+          
     
 while True:
    time_now= time.strftime("%H:%M:%S")   
