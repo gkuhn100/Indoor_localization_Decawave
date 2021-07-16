@@ -21,6 +21,8 @@ q = np.array([[.001,.001],[.002,.002]])
 H = np.array([[1,0],[0,1]])
 R = np.array([[.05,0],[0,.05]])
 C = np.array([[1,0],[0,1]])
+
+
 ser =  serial.Serial('/dev/ttyACM0',115200, timeout = 1)
 
 if ser.isOpen:
@@ -61,26 +63,23 @@ def process_cov():
     Pc= np.array([[.05,.05],[.05,.05]])
     Pc = np.dot(A,Pc)
     Pc = np.dot(Pc,At)+ W
-    print('Process covariance is)
+    #print('Process covariance is')
     return(Pc)
 
- def KalmanGain(X_est,Pc):
-     Kg_num = np.dot(Pc,H)
-     Kg_den = np.dot(H,Pc)
-     Kg_den = np.dot(Kg_den,H) + R
-     Kg     = np.divide(Kg_num,Kg,den)
-     return(Kg)
-  
- def Observation(parse):
-      tag_loc = np.array([[parse[0].strip('x:')],[parse[1].strip('y:')]],dtype=float)
-      obs = np.dot(c,tag_loc)
-      return(obs)
-          
-  def currentstate(kg,obs,xest):
-      X_temp= obs - np.dot(H,X_est)
-      Xk = X_est + np.dot(Kg,X_est)
-      return(Xk)
-          
+def KalmanGain(X_est,Pc):
+    Kg_num = np.dot(Pc,H)
+    Kg_den = np.dot(H,Pc)
+    Kg_den = np.dot(Kg_den,H) + R
+    Kg     = np.divide(Kg_num,Kg_den)
+    return(Kg)
+
+
+def Observation(parse):
+    tag_loc = np.array([[parse[0].strip('x:')],[parse[1].strip('y:')]],dtype=float)
+    obs = np.dot(C,tag_loc)
+    return(obs)
+
+   
     
 while True:
    time_now= time.strftime("%H:%M:%S")   
@@ -92,5 +91,8 @@ while True:
        print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel))
        loc = predict_state(tag_pos,accel)
        pc = process_cov()
+       kg = KalmanGain(loc,pc)
+       obs = Observation(tag_pos)
+       
        print("\n")
    time.sleep(.5)
