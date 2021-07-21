@@ -15,11 +15,11 @@ A = np.array([[1,0],[0,1]]) # A matrix for converting state model
 B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
 W = np.array([[.0005],[-.025]])# Predict error matrix
 At= np.transpose(A)
-q = np.array([[.001,.001],[.002,.002]])
+Q = np.array([[.001,.001],[.002,.002]])
 H = np.array([[1,0],[0,1]])
 R = np.array([[.05,0],[0,.05]])
 C = np.array([[1,0],[0,1]])
-pc = np.array([[.05,0.0],[0,.05]])
+Pc = np.array([[.05,0.0],[0,.05]])
 
 init = False 
 
@@ -67,7 +67,6 @@ def predict_state(tag_loc,accel_list):
         print(init)
         X_est = np.dot(A,tag_loc) + np.dot(B,accel)+W
         temp = X_est
-        print('suck a pussy')
         init = True
     elif init == True:
         print(init)
@@ -77,9 +76,9 @@ def predict_state(tag_loc,accel_list):
     return(X_est)
     
 def process_cov():
-    Pc= np.array([[.05,.05],[.05,.05]])
+    global Pc
     Pc = np.dot(A,Pc)
-    Pc = np.dot(Pc,At)+ W
+    Pc = np.dot(Pc,At)+ Q
     return(Pc)
 
 def KalmanGain(X_est,Pc):
