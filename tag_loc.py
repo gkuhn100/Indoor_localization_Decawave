@@ -69,7 +69,6 @@ def predict_state(tag_loc,accel_list):
         temp = X_est
         init = True
     elif init == True:
-        print(init)
         X_est = np.dot(A,temp) + np.dot(B,accel)+W
         temp = X_est
     
