@@ -119,6 +119,7 @@ def update_process(Pc,KG):
     Pc = np.dot(num,Pc)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
+    Pc = Pc + Q
     print()
     return(Pc)
 
