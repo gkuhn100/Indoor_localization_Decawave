@@ -17,7 +17,7 @@ I = np.array([[1,0],[0,1]])
 B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
 W = np.array([[.05],[-.025]])# Predict error matrix
 At= np.transpose(A)
-Q = np.array([[.001],[.002]])
+Q = np.array([[.001,0.0],[0.0.002]])
 H = np.array([[1,0],[0,1]])
 R = np.array([[.05],[.05]])
 C = np.array([[1,0],[0,1]])
