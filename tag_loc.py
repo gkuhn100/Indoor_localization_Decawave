@@ -1,4 +1,3 @@
- # -*- coding: utf-8 -*-
 """
 Spyder Editor
 
@@ -6,103 +5,125 @@ This is a temporary script file. mmmmmm,
 """
 
 import serial
-import datetime
-import sys
 import time
 from sense_hat import SenseHat
 import numpy as np
 
+
 sense = SenseHat()
-A = np.array([[1,0],[0,1]])
-B = np.array([[.5,0],[.5,0]],dtype=float)
-W = np.array([[.05],[.05]])
+A = np.array([[1,0],[0,1]]) # A matrix for converting state model
+I = np.array([[1,0],[0,1]]) 
+B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
+W = np.array([[.05],[0.025]])# Predict error matrix
 At= np.transpose(A)
-q = np.array([[.001,.001],[.002,.002]])
+Q = np.array([[.000212],[.04]])
 H = np.array([[1,0],[0,1]])
-R = np.array([[.05,0],[0,.05]])
+R = np.array([[.05],[.05]])
 C = np.array([[1,0],[0,1]])
-I = np.array([[1,0],[0,1]])
+Pc = np.array([[.05,0.0],[0.0,.05]])
 
+init = 0
 
-ser =  serial.Serial('/dev/ttyACM0',115200, timeout = 1)
+ser =  serial.Serial('/dev/ttyACM0',115200,timeout = 1)
 
 if ser.isOpen:
     print("connected to " + ser.name)
+    print("")
     time.sleep(1)
     line = ser.write("\r\r".encode())
     time.sleep(1)
-
-def get_pos():
+    
+    #Function to print measured value of position   
+def print_pos():
+    global init
     ser.write('apg\r'.encode())
     line = ser.readline()
     if 'dwm'.encode() not in line and len(line)>10:
         parse = line.decode().split()
-        x_pos = parse[parse.index("apg:")+1].strip("x:")
-        y_pos = parse[parse.index("apg:")+2].strip("y:")
-        qf   = parse[parse.index("apg:")+4].strip("qf:")
-        tag_pos = np.array([x_pos,y_pos,qf])
         parse = parse[1:]
         return(parse)
     else:
-        return()
+        return()  
+        
+       #Function to get measured value of position(wuith measured error)
+def get_pos(parse):
+    X_pos = float(parse[0].strip('x:'))*1e-3
+    Y_pos = float(parse[1].strip('y:'))*1e-3
+    Tag_loc = np.array([[X_pos],[Y_pos]],dtype=float) 
+    Tag_loc = Tag_loc + W
+    print()
+    print('tag measure')
+    print(Tag_loc)
+    print()
+    return(Tag_loc)
+
+ #Gets acceleration
 def get_accel():
     accel = sense.get_accelerometer_raw()
     X = accel['x']
     Y = accel['y']
     Z = accel['z']
-    accel_list = [X,Y,Z]
-    return(accel_list)
-
-def predict_state(parse,accel_list):
-    tag_loc = np.array([[parse[0].strip('x:')],[parse[1].strip('y:')]],dtype=float)
-    accel = np.array([[accel_list[0]],[accel_list[1]]],dtype=float)
-    X_est = np.dot(A,tag_loc) + np.dot(B,accel)
-    print('And the state estimate is {0}'.format(X_est))
-    return(X_est)
-
-def process_cov():
-    Pc= np.array([[.05,.05],[.05,.05]])
-    Pc = np.dot(A,Pc)
-    Pc = np.dot(Pc,At)+ W
-    #print('Process covariance is')
-    return(Pc)
+    Accel_list = [X,Y,Z]
+    return(Accel_list)
+    
 
 def KalmanGain(X_est,Pc):
+    
     Kg_num = np.dot(Pc,H)
     Kg_den = np.dot(H,Pc)
     Kg_den = np.dot(Kg_den,H) + R
     Kg     = np.divide(Kg_num,Kg_den)
+    Kg[0][1] = 0.0
+    Kg[1][0] = 0.0
+    print('Kalman Gain')
+    print(Kg)
+    print()
     return(Kg)
 
 
-def Observation(parse):
-    tag_loc = np.array([[parse[0].strip('x:')],[parse[1].strip('y:')]],dtype=float)
-    obs = np.dot(C,tag_loc)
-    return(obs)
-
-def Current(X_est,Kg,obs):
-    X_num = obs - np.dot(Y,X_est)
-    X_current = X_est+np.dot(Kg,X_num)
-    return(X_current)
-
-def UpdateProcess(Pc,Kg):
-    Pcu = I - np.dot(K,H)
-    Pc = np.dot(Pcu,Pc)
-    return(Pc)
-
+def update_state(X_est,Tag_loc,KG):
+    num = Tag_loc - np.dot(H,X_est)
+    X_est = X_est + np.dot(KG,num)
+    print()
+    print('Updated State')
+    print(X_est)
+    print()
+    return(X_est)
+      
 while True:
-   time_now = time.strftime("%H:%M:%S")
-   tag_pos = get_pos()
+   time_now= time.strftime("%H:%M:%S")   
+   tag_pos = print_pos()
    accel = get_accel()
-
-
+   
+    
    if tag_pos:
        print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel))
-       loc = predict_state(tag_pos,accel)
-       pc = process_cov()
-       kg = KalmanGain(loc,pc)
-       obs = Observation(tag_pos)
-
-
-       print("\n")
+       tag_loc = get_pos(tag_pos)
+       prior_tag = tag_loc
+       if init > 0:
+           Accel = np.array([[accel[0]],[accel[1]]],dtype=float)
+           est = np.dot(A,est) + np.dot(B,Accel)
+           print('The State Estimate is \n')
+           print(est)
+           print()
+           Pc = np.dot(A,Pc)
+           Pc = np.dot(Pc,At)+Q
+           Pc[1][0] = 0.0
+           Pc[0][1] = 0.0
+           print('The Proces Covariance is ')
+           print(Pc)
+           kg = KalmanGain(est,Pc)
+           est = update_state(est,prior_tag,kg)
+           num = I- (np.dot(kg,H))
+           Pc = np.dot(num,Pc)
+           Pc[0][1] = 0.0
+           Pc[1][0] = 0.0
+           print('The updated PC is ')
+           print(Pc)
+           print()
+       else:
+        est = tag_loc
+           
+       init +=1
+       
    time.sleep(.5)
