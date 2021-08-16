@@ -66,21 +66,6 @@ def get_accel():
     Accel_list = [X,Y,Z]
     return(Accel_list)
     
-    #Preidc the state 
-def predict_state(Tag_loc,Accel_list):
-    global init
-    if init == 0:
-        X_temp = Tag_loc
-    accel = np.array([[Accel_list[0]],[Accel_list[1]]],dtype=float)
-    X_est = np.dot(A,X_temp) + np.dot(B,accel) + 0
-    print()
-    print('Predicted State')
-    print(X_est)
-    X_temp = X_est
-    print()
-    return(X_est)
-    
-
 
 def KalmanGain(X_est,Pc):
     
@@ -104,11 +89,7 @@ def update_state(X_est,Tag_loc,KG):
     print(X_est)
     print()
     return(X_est)
-
-
-    
-    
-
+      
 while True:
    time_now= time.strftime("%H:%M:%S")   
    tag_pos = print_pos()
@@ -120,7 +101,11 @@ while True:
        tag_loc = get_pos(tag_pos)
        prior_tag = tag_loc
        if init > 0:
-           est = predict_state(tag_loc,accel)
+           Accel = np.array([[accel[0]],[accel[1]]],dtype=float)
+           est = np.dot(A,est) + np.dot(B,Accel)
+           print('The State Estimate is \n')
+           print(est)
+           print()
            Pc = np.dot(A,Pc)
            Pc = np.dot(Pc,At)+Q
            Pc[1][0] = 0.0
@@ -136,6 +121,8 @@ while True:
            print('The updated PC is ')
            print(Pc)
            print()
+       else:
+        est = tag_loc
            
        init +=1
        
