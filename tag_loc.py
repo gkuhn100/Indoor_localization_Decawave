@@ -121,6 +121,5 @@ while True:
            print()
        else:
         est = tag_loc
-
        init += 1
    time.sleep(.5)
