@@ -47,7 +47,6 @@ def get_pos(parse):
     X_pos = float(parse[0].strip('x:'))*1e-3
     Y_pos = float(parse[1].strip('y:'))*1e-3
     Tag_loc = np.array([[X_pos],[Y_pos]],dtype=float)
-    Tag_loc = Tag_loc
     print()
     print('Current Tag Observation')
     print(Tag_loc)
@@ -80,7 +79,6 @@ def KalmanGain(X_est,Pc):
     print()
     return(Kg)
 
-
 def update_state(X_est,Tag_loc,KG):
     num = Tag_loc - np.dot(H,X_est)
     X_est = X_est + np.dot(KG,num)
@@ -90,11 +88,16 @@ def update_state(X_est,Tag_loc,KG):
     print()
     return(X_est)
 
+def get_qf(parse):
+     Qf = float(parse[0].strip('x:'))*1e-3
+    return(Qf)
+
+
 while True:
    time_now= time.strftime("%H:%M:%S")
    tag_pos = print_pos()
    accel = get_accel()
-
+   qf    = det_qf(tag_pos)
 
    if tag_pos:
        print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel))
