@@ -32,7 +32,6 @@ if ser.isOpen:
 
     #Function to print measured value of position
 def print_pos():
-    global init
     ser.write('apg\r'.encode())
     line = ser.readline()
     if 'dwm'.encode() not in line and len(line)>10:
@@ -90,8 +89,8 @@ def update_state(X_est,Tag_loc,KG):
 
 def get_qf(parse):
      Qf = float(parse[0].strip('x:'))*1e-3
+     print('quality factor is {0}\n'.format(Qf))
     return(Qf)
-
 
 while True:
    time_now= time.strftime("%H:%M:%S")
