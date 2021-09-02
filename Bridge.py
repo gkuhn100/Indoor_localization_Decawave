@@ -30,7 +30,15 @@ def print_anchor(Line):
     for i in range(len(Anch_place)):
         print("Anchor {0} is named {1} At located at {2} {3} {4}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
 
-    
+def time_delta():
+    pt = time.time_ns()
+    tc = time.time_ns()
+    dt = tc - pt
+    dt_m = dt * 1e-6
+    dt_s = dt * 1e-9
+    print("The name elapsed in nano seconds is {0} milli is {1} and in seconds is {2} ".format(dt,dt_m,dt_s ))
+    pt = tc
+    return(dt_s)  
 
 while True:
     try:
@@ -43,14 +51,11 @@ while True:
                 y_pos=parse[parse.index("POS")+2]
                 qf = parse[parse.index("POS")+4]
                 val = (x_pos,y_pos)
-                print_anchor(line)
+                Dt = time_delta()
                 print('At time ' + datetime.datetime.now().strftime("%H:%M:%S"),"(",x_pos,",",y_pos,")")
                 count +=1
-                tc = time.time_ns()
-                dt = (tc - pc)* 1e-9
-                pc = tc
-                
-                if count == 5:
+             
+                if count == 5 and Dt<5:
                    init = True
               
                 
