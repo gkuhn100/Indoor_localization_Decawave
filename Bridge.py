@@ -1,7 +1,8 @@
 import serial
 import time
 import datetime
-
+from sense_hat import SenseHat
+sense = SenseHat()
 
 DWM=serial.Serial(port="/dev/ttyACM0", baudrate=115200)
 print("Connected to " +DWM.name)
@@ -11,6 +12,13 @@ DWM.write("lec\r".encode())
 time.sleep(1)
 init = False
 count = 0
+
+def get_accel():
+    accel = sense.get_accelerometer_raw()
+    X = accel['x']
+    Y = accel['y']
+    Accel_list = [X,Y]
+    return(Accel_list)
 
 def print_anchor(Line):
     Anch_name =  []
@@ -35,7 +43,7 @@ while True:
             if len(line)>=140:
                 count +=1
                 if count == 1:
-                    print_anchor(Line)
+                    print_anchor(line)
                elif if count > 5:
                     parse=line.decode().split(",")
                     x_pos=parse[parse.index("POS")+1]
