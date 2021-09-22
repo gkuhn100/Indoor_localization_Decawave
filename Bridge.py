@@ -31,10 +31,10 @@ def print_anchor(Line):
 while True:
     try:
         line=DWM.readline()
-        print_anchor(line)
         if(line):
             if len(line)>=140:
                 count +=1
+                print_anchor(line)
                 if count > 5:
                     parse=line.decode().split(",")
                     x_pos=parse[parse.index("POS")+1]
