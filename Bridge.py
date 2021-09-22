@@ -34,15 +34,16 @@ while True:
         if(line):
             if len(line)>=140:
                 count +=1
-                print_anchor(line)
-                if count > 5:
+                if count == 1:
+                    print_anchor(Line)
+               elif if count > 5:
                     parse=line.decode().split(",")
                     x_pos=parse[parse.index("POS")+1]
                     y_pos=parse[parse.index("POS")+2]
                     qf = parse[parse.index("POS")+4]
                     val = (x_pos,y_pos)
-                    #print('At time ' + datetime.datetime.now().strftime("%H:%M:%S") + ' The Tag is at location' ,"(",x_pos,",",y_pos,")"+ ' with a quality factor of', qf)
-                    #anchor_numb = print_anchor(line)
+                    print('At time ' + datetime.datetime.now().strftime("%H:%M:%S") + ' The Tag is at location' ,"(",x_pos,",",y_pos,")"+ ' with a quality factor of', qf)
+                    
                 
             else:
                 print("Position not calculated: ",line.decode())
