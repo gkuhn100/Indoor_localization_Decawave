@@ -27,7 +27,7 @@ def print_anchor(Line):
     print(line)
     if line.find("DIST") != -1:
         Line = line.split(",")
-        num_anchor = int(Line[Line.index("DIST")+1])
+        num_anchor = 4
         print("There are {0} anchors in this Setup".format(num_anchor))
         for place,item in enumerate(Line):
             if item.find("AN") !=-1:
@@ -35,8 +35,11 @@ def print_anchor(Line):
                 Anch_place.append(place) 
         for i in range(len(Anch_place)):
             print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
+    else:
+        print('die hippy')
 
 while True:
+    Accel = get_accel()
     try:
         line=DWM.readline()
         if(line):
@@ -44,13 +47,13 @@ while True:
                 count +=1
                 if count == 1:
                     print_anchor(line)
-               elif if count > 5:
+                elif count >= 5:
                     parse=line.decode().split(",")
                     x_pos=parse[parse.index("POS")+1]
                     y_pos=parse[parse.index("POS")+2]
                     qf = parse[parse.index("POS")+4]
                     val = (x_pos,y_pos)
-                    print('At time ' + datetime.datetime.now().strftime("%H:%M:%S") + ' The Tag is at location' ,"(",x_pos,",",y_pos,")"+ ' with a quality factor of', qf)
+                    print('At time ' + datetime.datetime.now().strftime("%H:%M:%S") + ' The Tag is at location' ,"(",x_pos,",",y_pos,")"+ ' with a quality factor of', qf, 'And an Acceleration of ', Accel)
                     
                 
             else:
