@@ -1,20 +1,22 @@
 import serial
 import time
 import datetime
+import numpy as np
 #from sense_hat import SenseHat
 #sense = SenseHat()
 
 DWM = serial.Serial(port="COM5", baudrate=115200, timeout=1)
 print('Connected to ' + DWM.name)
+print()
 DWM.write("\r\r".encode())
 time.sleep(1)
 DWM.write("lec\r".encode())
 time.sleep(1)
 init = False
+temp = False
 count = 0
-stat =  0
 
-
+## The Function below will be used to get the acceleration of the tag
 def get_accel():
     accel = sense.get_accelerometer()
     X = accel['X']
@@ -22,18 +24,11 @@ def get_accel():
     Accel_list = [X,Y]
     return (Accel_list)
 
-def det_motion(Accel_list):
-    X_accel = Accel_list[0]
-    Y_accel = Accel_list[1]
-
-def print_kalman(Acce_list,tag_loc):
-    print("position")
-
+##Function below is used to get the Quantity,Name, and Location of the Decawave Nodes
 def print_anchor(Line):
     Anch_name =  []
     Anch_place = []
-    line = Line.decode('ascii')
-    print(line)
+    line = Line
     if line.find("DIST") != -1:
         Line = line.split(",")
         num_anchor = 4
@@ -44,42 +39,44 @@ def print_anchor(Line):
                 Anch_place.append(place)
         for i in range(len(Anch_place)):
             print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
-    else:
-        print('hi')
+
+
+## Function Below is used to Parse through tag_position
+def get_tag(Line):
+    Line = Line.split()
+    Line = Line[1:]
+    X_pos = (Line[0].strip('x:'))
+    Y_pos = (Line[1].strip('y:'))
+    Qf    = (Line[3].strip('qf:'))
+    tag = [X_pos,Y_pos, Qf]
+    return(tag)
+
+## Function Below is used to calculate the Kalman Filter
+def calc_kalman(Accel_list,tag):
+    Loc_est = np.array[1,0]
+
 
 while True:
-    #Accel=get_accel()
-    line=DWM.readline()
-    if(line):
-        print('Count is {0}'.format(count))
-        if len(line)>=140:
-            count +=1
-            if count == 1:
-                print_anchor(line)
-            if count == 5:
-                init = True
-            if init:
-                stat = 0
-                parse=line.decode().split(",")
-                x_pos=parse[parse.index("POS")+1]
-                y_pos=parse[parse.index("POS")+2]
-                qf = parse[parse.index("POS")+4]
-                val = (x_pos,y_pos)
-                print('At time ' + datetime.datetime.now().strftime("%H:%M:%S") + ' The Tag is at location' ,"(",x_pos,",",y_pos,")"+ ' with a quality factor of', qf)
-        else:
-            print("Position not calculated: ",line.decode())
-    if not line and init == True:
-        print('device is not moving')
-        stat = 1
-    if stat == 1:
-        DWM.write("lec\r".encode())
-        Line = DWM.readline()
-        Line = Line.decode('ascii')
-        time.sleep(.1)
-        if Line.find("APG") != -1:
-            X_pos = float(line[0].strip('x:'))*1e-3
-            Y_pos = float(parse[1].strip('y:'))*1e-3
-            print('device is stationary')
+    line = DWM.readline()
+    line = line.decode('ascii')
+    Accel = [X,Y]
+    if len(line) > 140 and line.find('DIST') != -1:
+        count+=1
+        print(line)
+    if count == 1 and not temp:
+        print_anchor(line)
+        Temp = True
+    elif count == 3:
+        init = True
+    if init:
+        DWM.write('apg\r'.encode())
+        time.sleep(.5)
+        if line.find("apg") != -1 and len(line)>10:
+            tag_loc = get_tag(line)
+            print("At time {0} the Tag is at location {1} and Accelerating at {2} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Accel))
+
+
+
 
 
 DWM.write("\r".encode())
