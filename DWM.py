@@ -1,9 +1,22 @@
+#libraries and modules to import
 import serial
 import time
 import datetime
 import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
+
+# Matrices
+A =  np.array([[1,0],[0,1]]) # A matrix for converting state model
+At = np.transpose(A) ## A transpose
+B =  np.array([[.5,0],[.5,0]]) ## Matrix for converting control variable
+W = np.array([[.05],[0.025]]) #Predict State error matrix
+Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
+R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
+Pc = np.array([[.05,0.0],[0.0,.05]])#Process Uncertainty Matrix
+I = np.array([[1,0],[0,1]]) # Identity Matrix
+H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
+C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
 
 
 DWM = serial.Serial('/dev/ttyACM0',115200,timeout = 1)
@@ -55,12 +68,35 @@ def get_tag(Line):
     tag = [X_pos,Y_pos]
     return(tag)
 
-def calc_Kalman(Accel_list, tag):
-    X_est = .5 * Accel_list[0] + float(tag[0])
-    Y_est =  5 * Accel_list[1] + float(tag[1])
-    State_Est = [X_est,Y_est]
-    print("The Updated State is {0} " .format(State_Est))
+##Function to return the location estimation
+def loc_est(tag,Accel_list):
+    loc_est = np.dot(A,tag)+np.dot(B,Accel)
+    
+    return(loc_est)
+   
+def update_pc(pc):
+    pc = np.dot(A,pc)
+    pc = np.dot(pc,At)+Q
 
+def Kalman_Gain(pc):
+    Kg_num = np.dot(pc,H)
+    Kg_den = np.dot(H,pc)
+    Kg_den = np.dot(Kg_den,H)+R
+    Kg = np.divide(Kg_num,Kg_den)
+    Kg[0][1] = 0.0
+    Kg[1][0] = 0.0
+    print("The Kalman Gain is {0}" .format(Kg))
+    return(Kg)
+    
+def update_state(X_est,Tag_loc,Kg):
+    num = Tag_loc - np.dot(H,X_est)
+    X_est = X_est + np.dot(Kg,num)
+    print()
+    print('Updated State')
+    print(X_est)
+    print()
+    return(X_est)
+    
 
 while True:
     line = DWM.readline()
@@ -80,8 +116,10 @@ while True:
         if line.find("apg") != -1 and len(line)>10:
             tag_loc = get_tag(line)
             print("At time {0} the Tag is at location {1} and Accelerating at {2} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc, Accel))
-            calc_Kalman(Accel,tag_loc)
-
+            est_loc=loc_est(Accel,tag_loc)
+            print('The estimated value is {0} ' .format(est_loc))
+            
+            
 
 
 
