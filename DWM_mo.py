@@ -11,6 +11,8 @@ import serial
 import time
 import numpy as np
 from sense_hat import SenseHat
+import multiprocessing as mp
+from multiprocessing import Process
 sense = SenseHat()
 
 # Matrices
@@ -45,8 +47,27 @@ def get_accel():
     Accel_list = [X,Y]
     return (Accel_list)
 
-
+def tag_apg():
+    
+    while (1):
+        ser.write("apg\r".encode())
+        line = ser.readline()
+        line = line.decode('ascii')
+        if len(line)>10 and line.find("apg") != -1:
+            print(line)
+        time.sleep(.5)
+        
+    
+def tag_lec():
+    ser.write("lec\r".encode())
+    line = ser.readline()
+    print(line)
+    
 if __name__ == '__main__':
-    while(1):
-        accel = get_accel()
-        time.sleep(1)
+    
+        p1 = mp.Process(target=tag_apg)
+        p2 = mp.Process(target=tag_lec)
+        ##p1.start()
+        p2.start()
+        ##p1.join()
+        p2.join()        
