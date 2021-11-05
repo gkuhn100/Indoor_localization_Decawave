@@ -5,7 +5,6 @@ import datetime
 import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
-
 # Matrices
 A =  np.array([[1,0],[0,1]]) # A matrix for converting state model
 At = np.transpose(A) ## A transpose
@@ -18,20 +17,37 @@ I = np.array([[1,0],[0,1]]) # Identity Matrix
 H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
 
-
-DWM = serial.Serial('/dev/ttyACM0',115200,timeout = 1)
-print('Connected to ' + DWM.name)
-print()
-DWM.write("\r\r".encode())
-time.sleep(1)
-DWM.write("lec\r".encode())
-time.sleep(1)
+### Global Variables
+count  = 0
+init   = False
 anchor = False
-init = False
-temp = False
-count = 0
 
-## The Function below will be used to get the acceleration of the tag
+##Establishes a serial connection with the decawave tag_module
+ser =  serial.Serial('/dev/ttyACM0',115200,timeout=1)
+
+if ser.isOpen:
+    print(f'Connected to port {ser.name} ' )
+    time.sleep(1)
+    ser.write('\r\r'.encode())
+    time.sleep(1)
+    ser.write('lec\r'.encode())
+
+#Prints the name and Position of the Anchor nodes. WIll be called just once
+def print_anchor(Line):
+    Anch_name =  []
+    Anch_place = []
+    line = Line
+    Line = line.split(",")
+    num_anchor = Line[1]
+    print("There are {0} anchors in this Setup".format(num_anchor))
+    for place,item in enumerate(Line):
+        if item.find("AN") !=-1:
+            Anch_name.append(item)
+            Anch_place.append(place)
+    for i in range(len(Anch_place)):
+        print("Anchor {0} is named {1} and located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line))
+
+## Function to get the accleration of the tag node
 def get_accel():
     accel = sense.get_accelerometer_raw()
     X = accel['x']
@@ -41,88 +57,64 @@ def get_accel():
     Accel_list = [X,Y]
     return (Accel_list)
 
-##Function below is used to get the Quantity,Name, and Location of the Decawave Nodes
-def print_anchor(Line):
-    Anch_name =  []
-    Anch_place = []
-    line = Line
-    if line.find("DIST") != -1:
-        Line = line.split(",")
-        num_anchor = Line[1]
-        print("There are {0} anchors in this Setup".format(num_anchor))
-        for place,item in enumerate(Line):
-            if item.find("AN") !=-1:
-                Anch_name.append(item)
-                Anch_place.append(place)
-        for i in range(len(Anch_place)):
-            print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
+## Gets the position and quality factor od the tag node using 'apg' command
+def tag_apg():
+    ser.write('apg/r'.encode())
+    line = ser.readline()
+    line = line.decode('ascii')
+    if len(line) > 10 and line.find('apg')!=-1:  
+        Line = line.split()
+        print(Line)
+        return(Line)
+        
+##Function to predict the state of tag 
+def predict_state(tag,Accel_list):
+    state = tag[0:1]
+    state_est = np.dot(A,state) + np.dot(B,Accel_list)
+    return(state_est)
+
     
-
-## Function Below is used to Parse through tag_position
-def get_tag(Line):
-    Line = Line.split()
-    Line = Line[1:]
-    X_pos = (Line[0].strip('x:'))
-    Y_pos = (Line[1].strip('y:'))
-    Qf    = (Line[3].strip('qf:'))
-    tag = [X_pos,Y_pos]
-    return(tag)
-
-##Function to return the location estimation
-def loc_est(tag,Accel_list):
-    loc_est = np.dot(A,tag)+np.dot(B,Accel)
-    
-    return(loc_est)
-   
-def update_pc(pc):
-    pc = np.dot(A,pc)
-    pc = np.dot(pc,At)+Q
-
-def Kalman_Gain(pc):
-    Kg_num = np.dot(pc,H)
-    Kg_den = np.dot(H,pc)
-    Kg_den = np.dot(Kg_den,H)+R
-    Kg = np.divide(Kg_num,Kg_den)
+def Kalman():
+    Kg_num = np.dot(Pc,H)
+    Kg_den = np.dot(H,Pc)
+    Kg_den = np.dot(Kg_den,H) + R
+    Kg     = np.divide(Kg_num,Kg_den)
     Kg[0][1] = 0.0
     Kg[1][0] = 0.0
-    print("The Kalman Gain is {0}" .format(Kg))
+    print('Kalman Gain')
+    print(Kg)
+    print()
     return(Kg)
     
-def update_state(X_est,Tag_loc,Kg):
+def update_state(X_est,Tag_loc,KG):
     num = Tag_loc - np.dot(H,X_est)
-    X_est = X_est + np.dot(Kg,num)
+    X_est = X_est + np.dot(KG,num)
     print()
     print('Updated State')
     print(X_est)
     print()
     return(X_est)
-    
 
-while True:
-    line = DWM.readline()
-    line = line.decode('ascii')
-    Accel = get_accel()
-    if len(line) > 140 and line.find('DIST') != -1:
-        count+=1
-    if count == 1 and not anchor:
-        print_anchor(line)
-        anchor = True
-        print("\n")
-    elif count == 3:
-        init = True
-    if init:
-        DWM.write('apg\r'.encode())
-        time.sleep(.5)
-        if line.find("apg") != -1 and len(line)>10:
-            tag_loc = get_tag(line)
-            print("At time {0} the Tag is at location {1} and Accelerating at {2} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc, Accel))
-            est_loc=loc_est(Accel,tag_loc)
-            print('The estimated value is {0} ' .format(est_loc))
+if __name__ == '__main__':
+    while(1):
+        line = ser.readline()
+        line = line.decode('ascii')
+        if len(line) > 140 and line.find("DIST")!=-1:
+            count +=1
+        if count == 1 and not anchor:
+            print_anchor(line)
+            anchor = True
+        if count >=3:
+            print(line)
+            init = True
+        if init and not line:
+            tag = tag_apg()
+            if (tag):
+                tag_loc = tag[0:1]
+                tag_qf  = tag[2]
+                print(f'The tag is measured at position {tag_loc}')
+                print('The estimated tag position is ')
+                print('The Process covarianceis' )
+                print('The Kalman Gain is ')
+                print('The updated state position is ')
             
-            
-
-
-
-
-DWM.write("\r".encode())
-DWM.close()
