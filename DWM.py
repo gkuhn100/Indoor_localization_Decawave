@@ -64,8 +64,21 @@ def tag_apg():
     line = line.decode('ascii')
     if len(line) > 10 and line.find('apg')!=-1:  
         Line = line.split()
-        print(Line)
         return(Line)
+
+##Function that soley Returns the position of the tag value from the Lec command
+def tag_lec(line):
+    pos = 0
+    line = line.split(",")
+
+    for place,item in enumerate(line):
+        if item.find("POS") != -1:
+            pos = place +1
+    
+    tag_pos = line[pos:]
+    print(tag_pos)
+    return(tag_pos)
+
         
 ##Function to predict the state of tag 
 def predict_state(tag,Accel_list):
@@ -97,6 +110,7 @@ def update_state(X_est,Tag_loc,KG):
 
 if __name__ == '__main__':
     while(1):
+        time_now= time.strftime("%H:%M:%S")
         line = ser.readline()
         line = line.decode('ascii')
         if len(line) > 140 and line.find("DIST")!=-1:
@@ -109,12 +123,6 @@ if __name__ == '__main__':
             init = True
         if init and not line:
             tag = tag_apg()
-            if (tag):
-                tag_loc = tag[0:1]
-                tag_qf  = tag[2]
-                print(f'The tag is measured at position {tag_loc}')
-                print('The estimated tag position is ')
-                print('The Process covarianceis' )
-                print('The Kalman Gain is ')
-                print('The updated state position is ')
-            
+            time.sleep(.5)
+            print(tag)
+           
