@@ -1,7 +1,6 @@
 #libraries and modules to import
 import serial
 import time
-import datetime
 import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
@@ -32,7 +31,7 @@ if ser.isOpen:
     time.sleep(1)
     ser.write('lec\r'.encode())
 
-#Prints the name and Position of the Anchor nodes. WIll be called just once
+#Prints the name and Position of the Anchor nodes. Will be called just once
 def print_anchor(Line):
     Anch_name =  []
     Anch_place = []
@@ -46,6 +45,7 @@ def print_anchor(Line):
             Anch_place.append(place)
     for i in range(len(Anch_place)):
         print("Anchor {0} is named {1} and located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line))
+    print()
 
 ## Function to get the accleration of the tag node
 def get_accel():
@@ -57,36 +57,37 @@ def get_accel():
     Accel_list = [X,Y]
     return (Accel_list)
 
-## Gets the position and quality factor od the tag node using 'apg' command
+def get_qf(line):
+    print('the quality factor is')
+
+def get_anchor_error(line):
+    
+    
+## Gets the position and quality factor of the tag node using 'apg' command
 def tag_apg():
     ser.write('apg/r'.encode())
     line = ser.readline()
     line = line.decode('ascii')
-    if len(line) > 10 and line.find('apg')!=-1:  
-        Line = line.split()
-        return(Line)
+    return(line)
 
-##Function that soley Returns the position of the tag value from the Lec command
+##Function to return the position of the tag from the lec output
 def tag_lec(line):
     pos = 0
     line = line.split(",")
-
+    print(line)
     for place,item in enumerate(line):
         if item.find("POS") != -1:
-            pos = place +1
-    
-    tag_pos = line[pos:]
-    print(tag_pos)
+            pos = place + 1
+            tag_pos = line[pos:]
     return(tag_pos)
 
-        
 ##Function to predict the state of tag 
 def predict_state(tag,Accel_list):
     state = tag[0:1]
     state_est = np.dot(A,state) + np.dot(B,Accel_list)
     return(state_est)
 
-    
+   ## 
 def Kalman():
     Kg_num = np.dot(Pc,H)
     Kg_den = np.dot(H,Pc)
@@ -113,16 +114,13 @@ if __name__ == '__main__':
         time_now= time.strftime("%H:%M:%S")
         line = ser.readline()
         line = line.decode('ascii')
-        if len(line) > 140 and line.find("DIST")!=-1:
-            count +=1
-        if count == 1 and not anchor:
-            print_anchor(line)
-            anchor = True
-        if count >=3:
-            print(line)
-            init = True
-        if init and not line:
-            tag = tag_apg()
-            time.sleep(.5)
-            print(tag)
-           
+        if len(line) >=140 and line.find("DIST")!=-1:
+            count+=1
+            if count == 1:
+                print_anchor(line)
+            elif count>=3:
+                 Line=tag_lec(line)
+                 ##pos_lec = Line[0:3]
+                ##print(f'The tag is at position {pos_lec} at time {time_now}' )
+                 init = True
+        
