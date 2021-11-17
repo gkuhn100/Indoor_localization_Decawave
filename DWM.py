@@ -44,8 +44,9 @@ def print_anchor(Line):
         for i in range(len(Anch_place)):
             print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
         print()
+        return(num_anchor)
         
-## Function Below is used to Parse through tag_position
+## Function Below is used to Parse through for the 'apg' 
 def get_tag(Line):
     Line = Line.split()
     Line = Line[1:]
@@ -63,6 +64,18 @@ def tag_lec(Line):
             pos = place + 1
             tag_pos = line[pos:]
     return(tag_pos)
+    
+##Displays the error of the anchor
+def get_anchor(line,num_anchor):
+    Line = line.split(",")
+    anchor_total = int(Line[1])
+    diff_anchor = anchor_total - num_anchor
+    if (anchor_total - num_anchor) > 0:
+        print('warning')
+    else:
+        print('idk')
+    return(diff_anchor)
+
 
 while True:
     line = DWM.readline()
@@ -71,19 +84,19 @@ while True:
     if len(line) > 140 and line.find('DIST') != -1:
         count+=1
         tag_lec_pos=tag_lec(line)
-        #print(tag_lec_pos)
+        print(tag_lec_pos)
     if count == 1 and not Temp:
-        print_anchor(line)
+        anchor_init=int(print_anchor(line))
         Temp = True
-    elif count == 3:
+    if count == 3:
         init = True
     if init:
         DWM.write('apg\r'.encode())
         time.sleep(.5)
+        get_anchor(line,anchor_init)
         if line.find("apg") != -1 and len(line)>10:
             tag_loc,Qf = get_tag(line)
-            print("At time {0} the Tag is at location {1} and Accelerating at {2} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Accel))
-
+            print("At time {0} the Tag is at location {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Qf,Accel))
 
 DWM.write("\r".encode())
 DWM.close()
