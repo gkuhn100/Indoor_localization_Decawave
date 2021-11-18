@@ -7,16 +7,16 @@ sense = SenseHat()
 
 ## module to open and establish the serial port connection
 DWM =  serial.Serial('/dev/ttyACM0',115200,timeout=1)
-if DWM.isOpen():
-    print('Connected to ' + DWM.name)
-    print()
-    DWM.write("\r\r".encode())
-    time.sleep(1)
-    DWM.write("lec\r".encode())
-    time.sleep(1)
-    init = False
-    Temp = False
-    count = 0
+time.sleep(1)
+print('Connected to ' + DWM.name)
+print()
+DWM.write("\r\r".encode())
+time.sleep(1)
+DWM.write("lec\r".encode())
+time.sleep(1)
+init = False
+Temp = False
+count = 0
 
 ## The Function below will be used to get the acceleration of the tag
 def get_accel():
