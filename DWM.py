@@ -6,7 +6,7 @@ from sense_hat import SenseHat
 sense = SenseHat()
 
 ## module to open and establish the serial port connection
-DWM =  serial.Serial('/dev/ttyACM0',115200,timeout=1)
+DWM = serial.Serial("/dev/ttyACM0", 115200, timeout = 1)
 time.sleep(1)
 print('Connected to ' + DWM.name)
 print()
@@ -60,31 +60,33 @@ def get_tag(Line):
 def tag_lec(Line):
     line = Line.split(',')
     for place,item in enumerate(line):
-        if item.find("POS") != -1:
+        if item.find("POS") != -1 and len(line)>27:
             pos = place + 1
             tag_pos = line[pos:]
-    return(tag_pos)
-    
-##Displays the error of the anchor
+            return(tag_pos)
+                
+##Displays an error signal if one of the anchor node is malfunctioning
 def get_anchor(line,num_anchor):
     Line = line.split(",")
-    anchor_total = int(Line[1])
-    diff_anchor = anchor_total - num_anchor
-    if (anchor_total - num_anchor) > 0:
-        print('warning')
-    else:
-        print('idk')
-    return(diff_anchor)
-
-
+    if len(line) > 120 and line.find('DIST') != -1:
+        anchor_total = Line[1]
+        anchor_total = int(anchor_total)
+        diff_anchor = anchor_total - num_anchor
+        return(diff_anchor)
+        if (anchor_total - num_anchor) > 0:
+            print('warning')
+        else:
+            print('idk')
+        
 while True:
     line = DWM.readline()
     line = line.decode('ascii')
+    print(line)
     Accel = get_accel()
-    if len(line) > 140 and line.find('DIST') != -1:
+    if line.find('DIST') != -1:
         count+=1
-        tag_lec_pos=tag_lec(line)
-        print(tag_lec_pos)
+        lec_pos=tag_lec(line)
+        print(f'At time {datetime.datetime.now().strftime("%H:%M:%S")} the tag is at position {lec_pos}')
     if count == 1 and not Temp:
         anchor_init=int(print_anchor(line))
         Temp = True
@@ -93,7 +95,7 @@ while True:
     if init:
         DWM.write('apg\r'.encode())
         time.sleep(.5)
-        get_anchor(line,anchor_init)
+        ##get_anchor(line,anchor_init)
         if line.find("apg") != -1 and len(line)>10:
             tag_loc,Qf = get_tag(line)
             print("At time {0} the Tag is at location {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Qf,Accel))
