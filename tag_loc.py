@@ -101,7 +101,7 @@ while True:
    if tag_pos:
        print('At time {0} the tag is at location {1} and is acellerating at {2}m/s^2'.format(time_now,tag_pos,accel))
        tag_loc = get_pos(tag_pos)
-       if init > 0:
+       if init > 0 and:
            predict_state(est,accel):
            print('The State Estimate is \n')
            print(est)
@@ -112,15 +112,16 @@ while True:
            Pc[0][1] = 0.0
            print('The Proces Covariance is ')
            print(Pc)
-           kg = KalmanGain(est,Pc)
-           est = update_state(est,tag_loc,kg)
-           num = I- (np.dot(kg,H))
-           Pc = np.dot(num,Pc)
-           Pc[0][1] = 0.0
-           Pc[1][0] = 0.0
-           print('The updated PC is ')
-           print(Pc)
-           print()
+           if iqf > 0
+                kg = KalmanGain(est,Pc)
+                est = update_state(est,tag_loc,kg)
+                num = I- (np.dot(kg,H))
+                Pc = np.dot(num,Pc)
+                Pc[0][1] = 0.0
+                Pc[1][0] = 0.0
+                print('The updated PC is ')
+                print(Pc)
+                print()
        else:
         est = tag_loc
        init += 1
