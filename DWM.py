@@ -78,6 +78,8 @@ def anchor_error(line,num_anchor):
             print('warning')
         return(diff_anchor)
 
+## The function below is used to 
+
 if __name__ == '__main__':
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
@@ -96,7 +98,8 @@ if __name__ == '__main__':
         if init:
             DWM.write('apg\r'.encode())
             time.sleep(.5)
-            anchor_error(line,anchor_init)
+            num_anchor=anchor_error(line,anchor_init)
+            print(num_anchor)
             if line.find("apg") != -1 and len(line)>10:
                 tag_loc,Qf = get_tag(line)
                 print("At time {0} the Tag is at location {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Qf,Accel))
