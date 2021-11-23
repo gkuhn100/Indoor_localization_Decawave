@@ -105,8 +105,8 @@ if __name__ == '__main__':
         Accel = get_accel()
         if line.find('DIST') != -1:
             count+=1
-            lec_pos=tag_lec(line)
-            print(f'At time {time_now} the tag is at position {lec_pos}')
+            tag_loc=tag_lec(line)
+            print(f'At time {time_now} the tag is at position {tag_loc}')
         if count == 1 and not Temp:
             anchor_init=int(print_anchor(line))
             Temp = True
@@ -118,7 +118,7 @@ if __name__ == '__main__':
             num_anchor=anchor_error(line,anchor_init)
             if line.find("apg") != -1 and len(line)>10:
                 tag_loc,Qf = get_tag(line)
-                print("At time {0} the Tag is at location {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Qf,Accel))
-
+                print("At time {0} the Tag's observed location is {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(time_now,tag_loc,Qf,Accel))
+            est = predict_state(ext,Accel)   
 DWM.write("\r".encode())
 DWM.close()
