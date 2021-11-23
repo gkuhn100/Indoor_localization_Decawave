@@ -6,6 +6,18 @@ import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
 
+## Matrices used in the Kalman Filter
+A = np.array([[1,0],[0,1]]) # A matrix for converting state model
+At= np.transpose(A)
+B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
+W = np.array([[.05],[0.025]])# Predict State error matrix
+Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
+R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
+Pc = np.array([[.05,0.0],[0.0,.05]])#Process Uncertainty Matrix
+I = np.array([[1,0],[0,1]]) # Identity Matrix
+H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
+C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
+
 ## Code to open and establish the serial port connection
 DWM = serial.Serial("/dev/ttyACM0", 115200, timeout = 1)
 time.sleep(1)
@@ -67,6 +79,12 @@ def tag_lec(Line):
             print(tag_pos)
             return(tag_pos)
 
+## Function to predict future State
+def predict_state(x_est,Accel_list):
+    Accel = np.array([[Accel_listccel[0]],[Accel_list[1]]],dtype=float)
+    X_est = np.dot(A,est) + np.dot(B,Accel)
+    return(X_est)
+
 ## Displays an error signal if one of the anchor node is malfunctioning
 def anchor_error(line,num_anchor):
     Line = line.split(",")
@@ -78,8 +96,7 @@ def anchor_error(line,num_anchor):
             print('warning')
         return(diff_anchor)
 
-## The function below is used to 
-
+## Main Function
 if __name__ == '__main__':
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
@@ -99,7 +116,6 @@ if __name__ == '__main__':
             DWM.write('apg\r'.encode())
             time.sleep(.5)
             num_anchor=anchor_error(line,anchor_init)
-            print(num_anchor)
             if line.find("apg") != -1 and len(line)>10:
                 tag_loc,Qf = get_tag(line)
                 print("At time {0} the Tag is at location {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(datetime.datetime.now().strftime("%H:%M:%S"),tag_loc,Qf,Accel))
