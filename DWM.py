@@ -16,8 +16,8 @@ R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
 I = np.array([[1,0],[0,1]]) #Identity Matrix
 H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
-delta_X = .5 ##Uncertainty in X_position
-delta_Y = .5 ##Uncertainty in Y_position
+delta_X = 0.5 ##Uncertainty in X_position
+delta_Y = 0.5 ##Uncertainty in Y_position
 
 ## Code to open and establish the serial port connection
 DWM = serial.Serial("/dev/ttyACM0", 115200, timeout = 1)
@@ -46,18 +46,18 @@ def get_accel():
 def print_anchor(Line):
     Anch_name =  []
     Anch_place = []
-    if Line.find("DIST") != -1:
-        line = Line.split(",")
-        num_anchor = line[1]
-        print("There are {0} anchors in this Setup".format(num_anchor))
-        for place,item in enumerate(Line):
-            if item.find("AN") !=-1:
-                Anch_name.append(item)
-                Anch_place.append(place)
-        for i in range(len(Anch_place)):
-            print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
-        print()
-        return(num_anchor)
+    line = Line.split(",")
+    num_anchor = line[1]
+    print("There are {0} anchors in this Setup".format(num_anchor))
+    for place,item in enumerate(line):
+        if item.find("AN") !=-1:
+            Anch_name.append(item)
+            Anch_place.append(place)
+    for i in range(len(Anch_place)):
+        print("Anchor {0} is named {1} and located at {2} {3} {4}".format(Anch_name[i],line[Anch_place[i]+1],line[Anch_place[i]+2],line[Anch_place[i]+3],line[Anch_place[i]+4]))
+    print()
+    return(num_anchor)
+
 
 ## This function is used to Parse through line after command "apg" has been entered"
 def get_tag(Line):
@@ -66,7 +66,7 @@ def get_tag(Line):
     X_pos = (Line[0].strip('x:'))
     Y_pos = (Line[1].strip('y:'))
     Qf =    (Line[3].strip('qf:'))
-    tag = [X_pos+.05,Y_pos+.05]
+    tag = [X_pos,Y_pos]
     return(tag,Qf)
 
 ## Function to return and print the tag's position from the 'lec' command
@@ -77,7 +77,7 @@ def tag_lec(Line):
         if item.find("POS") != -1 and (length)>140:
             pos = place + 1
             tag_pos = line[pos:]
-            print(tag_pos)
+            #print(tag_pos)
             return(tag_pos)
 
 ## Function to predict the future State
@@ -87,7 +87,7 @@ def predict_state(x_est,Accel_list):
     return(X_est)
 
 def proccess_cov_int():
-    Pc = np.array([[delta_X*delta_X], delta_X*delta_Y], [[delta_Y*delta_X],delta_Y*delta_Y],dtype=float)
+    Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
@@ -123,10 +123,10 @@ if __name__ == '__main__':
         if line.find('DIST') != -1:
             count+=1
             tag_loc=tag_lec(line)
-            print(f'At time {time_now} the tags estimated position is {tag_loc} and is accelerating at {Accel}m/s^2')
-        if count == 1 and not Temp:
-            anchor_init=int(print_anchor(line))
-            Temp = True
+            ##print(f'At time {time_now} the tags estimated position is {tag_loc} and is accelerating at {Accel}m/s^2')
+        if count == 1 and len(line)>100:
+           anchor_init=int(print_anchor(line))
+           Temp = True
         if count == 3:
             init = True
         if init:
