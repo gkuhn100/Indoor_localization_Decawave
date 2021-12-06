@@ -20,7 +20,7 @@ delta_X = 0.5 ##Uncertainty in X_position
 delta_Y = 0.5 ##Uncertainty in Y_position
 
 ## Code to open and establish the serial port connection
-DWM = serial.Serial("/dev/ttyACM0", 115200, timeout = 1)
+DWM = serial.Serial("/dev/ttyACM1", 115200, timeout = 1)
 time.sleep(1)
 print('Connected to ' + DWM.name)
 print()
@@ -58,7 +58,6 @@ def print_anchor(Line):
     print()
     return(num_anchor)
 
-
 ## This function is used to Parse through line after command "apg" has been entered"
 def get_tag(Line):
     Line = Line.split()
@@ -77,28 +76,28 @@ def tag_lec(Line):
         if item.find("POS") != -1 and (length)>140:
             pos = place + 1
             tag_pos = line[pos:]
-            #print(tag_pos)
             return(tag_pos)
 
 ## Function to predict the future State
 def predict_state(x_est,Accel_list):
     Accel = np.array([[Accel_list[0]],[Accel_list[1]]],dtype=float)
-    X_est = np.dot(A,est) + np.dot(B,Accel)+np.ndarray(W)
+    X_est = np.dot(A,est) + np.dot(B,Accel)+W
     return(X_est)
 
+## Function to initialize the process covariance matrix
 def proccess_cov_int():
     Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
-
+    
+## Function to update the process covariance matrix
 def proccess_cov(Pc):
     Pc = np.dot(A,Pc)
     Pc = np.dot(Pc,At)+Q
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
-
 
 ## Displays an error signal if one of the anchor node is malfunctioning
 def anchor_error(line,num_anchor):
@@ -114,7 +113,8 @@ def anchor_error(line,num_anchor):
 ## Main Function
 if __name__ == '__main__':
     dT = 0.0
-    PC = proccess_cov_int()
+    Pc = proccess_cov_int()
+    est = np.array([[1.2],[2.2]])
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         line = DWM.readline()
@@ -123,13 +123,13 @@ if __name__ == '__main__':
         if line.find('DIST') != -1:
             count+=1
             tag_loc=tag_lec(line)
-            ##print(f'At time {time_now} the tags estimated position is {tag_loc} and is accelerating at {Accel}m/s^2')
-        if count == 1 and len(line)>100:
+        if count == 1 and len(line)>100 and Temp == False:
            anchor_init=int(print_anchor(line))
            Temp = True
         if count == 3:
             init = True
         if init:
+            ##print(f'At time {time_now} the tags estimated position is {tag_loc} and is accelerating at {Accel}m/s^2')
             DWM.write('apg\r'.encode())
             time.sleep(.5)
             dT = time.time() - dT
