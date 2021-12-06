@@ -90,7 +90,7 @@ def proccess_cov_int():
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
-    
+
 ## Function to update the process covariance matrix
 def proccess_cov(Pc):
     Pc = np.dot(A,Pc)
@@ -98,6 +98,11 @@ def proccess_cov(Pc):
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
+
+## Function to calculate the Kalman KalmanGain
+def kalmangain(Kg):
+
+
 
 ## Displays an error signal if one of the anchor node is malfunctioning
 def anchor_error(line,num_anchor):
@@ -139,7 +144,7 @@ if __name__ == '__main__':
                 est = predict_state(est,Accel)
                 Pc = proccess_cov(Pc)
                 print("At time {0} the Tag's observed location is {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(time_now,tag_loc,Qf,Accel))
-                print('The Predicited State is ')
+                print(f'The Predicited State is {est}')
                 print('The Kalman Gain is ')
                 print('The Updated State is ')
 
