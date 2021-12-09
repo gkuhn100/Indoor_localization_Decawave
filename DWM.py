@@ -164,10 +164,11 @@ if __name__ == '__main__':
                 tag_loc,Qf = get_tag(line)
                 est = predict_state(est,Accel)
                 Pc = proccess_cov(Pc)
+                kg = KalmanGain(est,Pc)
                 print("At time {0} the Tag's observed location is {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(time_now,tag_loc,Qf,Accel))
                 print(f'The Predicited State is {est}')
-                print('The Kalman Gain is ')
-                print('The Updated State is ')
+                print(f'The Kalman Gain is {kg}')
+                print(f'The Updated State is {est}')
 
 DWM.write("\r".encode())
 DWM.close()
