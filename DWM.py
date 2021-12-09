@@ -19,6 +19,11 @@ C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
 delta_X = 0.5 ##Uncertainty in X_position
 delta_Y = 0.5 ##Uncertainty in Y_position
 
+## Global Variables
+init = False
+Temp = False
+count = 0
+
 ## Code to open and establish the serial port connection
 DWM = serial.Serial("/dev/ttyACM1", 115200, timeout = 1)
 time.sleep(1)
@@ -28,9 +33,6 @@ DWM.write("\r\r".encode())
 time.sleep(1)
 DWM.write("lec\r".encode())
 time.sleep(1)
-init = False
-Temp = False
-count = 0
 
 ## The Function below will be used to recieve and return the tag's acceleration
 def get_accel():
@@ -78,12 +80,6 @@ def tag_lec(Line):
             tag_pos = line[pos:]
             return(tag_pos)
 
-## Function to predict the future State
-def predict_state(x_est,Accel_list):
-    Accel = np.array([[Accel_list[0]],[Accel_list[1]]],dtype=float)
-    X_est = np.dot(A,est) + np.dot(B,Accel)+W
-    return(X_est)
-
 ## Function to initialize the process covariance matrix
 def proccess_cov_int():
     Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
@@ -99,10 +95,35 @@ def proccess_cov(Pc):
     Pc[1][0] = 0.0
     return(Pc)
 
-## Function to calculate the Kalman KalmanGain
-def kalmangain(Kg):
+
+## Function to predict the future State
+def predict_state(x_est,Accel_list):
+    Accel = np.array([[Accel_list[0]],[Accel_list[1]]],dtype=float)
+    X_est = np.dot(A,est) + np.dot(B,Accel)+W
+    return(X_est)
 
 
+## Function to calculate the KalmanGain
+def KalmanGain(X_est,Pc):
+    Kg_num = np.dot(Pc,H)
+    Kg_den = np.dot(H,Pc)
+    Kg_den = np.dot(Kg_den,H) + R
+    Kg     = np.divide(Kg_num,Kg_den)
+    Kg[0][1] = 0.0
+    Kg[1][0] = 0.0
+    print('Kalman Gain')
+    print(Kg)
+    print()
+    return(Kg)
+
+def update_state(X_est,Tag_loc,KG):
+    num = Tag_loc - np.dot(H,X_est)
+    X_est = X_est + np.dot(KG,num)
+    print()
+    print('Updated State')
+    print(X_est)
+    print()
+    return(X_est)
 
 ## Displays an error signal if one of the anchor node is malfunctioning
 def anchor_error(line,num_anchor):
