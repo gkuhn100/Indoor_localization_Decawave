@@ -95,7 +95,6 @@ def proccess_cov(Pc):
     Pc[1][0] = 0.0
     return(Pc)
 
-
 ## Function to predict the future State
 def predict_state(x_est,Accel_list):
     Accel = np.array([[Accel_list[0]],[Accel_list[1]]],dtype=float)
@@ -111,18 +110,11 @@ def KalmanGain(X_est,Pc):
     Kg     = np.divide(Kg_num,Kg_den)
     Kg[0][1] = 0.0
     Kg[1][0] = 0.0
-    print('Kalman Gain')
-    print(Kg)
-    print()
     return(Kg)
 
 def update_state(X_est,Tag_loc,KG):
     num = Tag_loc - np.dot(H,X_est)
     X_est = X_est + np.dot(KG,num)
-    print()
-    print('Updated State')
-    print(X_est)
-    print()
     return(X_est)
 
 ## Displays an error signal if one of the anchor node is malfunctioning
