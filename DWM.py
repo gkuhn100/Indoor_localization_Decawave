@@ -60,7 +60,7 @@ def print_anchor(Line):
     print()
     return(num_anchor)
 
-## This function is used to Parse through line after command "apg" has been entered"
+## Function to return and print the tag's position from the 'apg' command
 def get_tag(Line):
     Line = Line.split()
     Line = Line[1:]
