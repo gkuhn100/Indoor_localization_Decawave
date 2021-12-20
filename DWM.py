@@ -101,7 +101,6 @@ def predict_state(x_est,Accel_list):
     X_est = np.dot(A,est) + np.dot(B,Accel)+W
     return(X_est)
 
-
 ## Function to calculate the KalmanGain
 def KalmanGain(X_est,Pc):
     Kg_num = np.dot(Pc,H)
