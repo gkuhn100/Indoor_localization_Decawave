@@ -4,6 +4,7 @@ import time
 import datetime
 import numpy as np
 from sense_hat import SenseHat
+from multiprocessing import Process
 sense = SenseHat()
 
 ## Matrices used in the Kalman Filter
@@ -25,7 +26,7 @@ Temp = False
 count = 0
 
 ## Code to open and establish the serial port connection
-DWM = serial.Serial("/dev/ttyACM1", 115200, timeout = 1)
+DWM = serial.Serial("/dev/ttyACM0", 115200, timeout = 1)
 time.sleep(1)
 print('Connected to ' + DWM.name)
 print()
@@ -56,7 +57,7 @@ def print_anchor(Line):
             Anch_name.append(item)
             Anch_place.append(place)
     for i in range(len(Anch_place)):
-        print("Anchor {0} is named {1} and located at {2} {3} {4}".format(Anch_name[i],line[Anch_place[i]+1],line[Anch_place[i]+2],line[Anch_place[i]+3],line[Anch_place[i]+4]))
+        print("Anchor {0} is named {1} and is located at {2} {3} {4}".format(Anch_name[i],line[Anch_place[i]+1],line[Anch_place[i]+2],line[Anch_place[i]+3],line[Anch_place[i]+4]))
     print()
     return(num_anchor)
 
@@ -102,7 +103,7 @@ def predict_state(x_est,Accel_list):
     return(X_est)
 
 
-## Function to calculate the KalmanGain
+## Function to calculate the Kalman Gain
 def KalmanGain(X_est,Pc):
     Kg_num = np.dot(Pc,H)
     Kg_den = np.dot(H,Pc)
@@ -112,6 +113,7 @@ def KalmanGain(X_est,Pc):
     Kg[1][0] = 0.0
     return(Kg)
 
+##Function to update the state
 def update_state(X_est,Tag_loc,KG):
     num = Tag_loc - np.dot(H,X_est)
     X_est = X_est + np.dot(KG,num)
@@ -124,16 +126,18 @@ def anchor_error(line,num_anchor):
         anchor_total = Line[1]
         anchor_total = int(anchor_total)
         diff_anchor = anchor_total - num_anchor
-        if (anchor_total - num_anchor) > 0:
-            print('warning')
         return(diff_anchor)
+      
+    
 
 ## Main Function
 if __name__ == '__main__':
-    dT = 0.0
     Pc = proccess_cov_int()
     est = np.array([[1.2],[2.2]])
+    
+
     while True:
+        time_start = time.time()
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         line = DWM.readline()
         line = line.decode('ascii')
@@ -147,20 +151,21 @@ if __name__ == '__main__':
         if count == 3:
             init = True
         if init:
-            ##print(f'At time {time_now} the tags estimated position is {tag_loc} and is accelerating at {Accel}m/s^2')
             DWM.write('apg\r'.encode())
             time.sleep(.5)
-            dT = time.time() - dT
-            num_anchor=anchor_error(line,anchor_init)
             if line.find("apg") != -1 and len(line)>10:
                 tag_loc,Qf = get_tag(line)
                 est = predict_state(est,Accel)
                 Pc = proccess_cov(Pc)
                 kg = KalmanGain(est,Pc)
+                time_end = time.time()
+                dT = round(((time_end-time_start)),3)*2
+                print(dT)
+                time_start = time_end
                 print("At time {0} the Tag's observed location is {1} with a Quality factor of {2} and Accelerating at {3} m/s^2" .format(time_now,tag_loc,Qf,Accel))
-                print(f'The Predicited State is {est}')
-                print(f'The Kalman Gain is {kg}')
-                print(f'The Updated State is {est}')
+                ##print(f'The Predicited State is {est}')
+                ##print(f'The Kalman Gain is {kg}')
+                ##print(f'The Updated State is {est}')
 
 DWM.write("\r".encode())
 DWM.close()
