@@ -48,6 +48,7 @@ def get_accel():
 def print_anchor(Line):
     Anch_name =  []
     Anch_place = []
+<<<<<<< Updated upstream
     line = Line.split(",")
     num_anchor = line[1]
     print("There are {0} anchors in this Setup".format(num_anchor))
@@ -59,6 +60,20 @@ def print_anchor(Line):
         print("Anchor {0} is named {1} and located at {2} {3} {4}".format(Anch_name[i],line[Anch_place[i]+1],line[Anch_place[i]+2],line[Anch_place[i]+3],line[Anch_place[i]+4]))
     print()
     return(num_anchor)
+=======
+    if Line.find("DIST") != -1:
+        line = Line.split(",")
+        num_anchor = line[1]
+        print("There are {0} anchors in this Setup".format(num_anchor))
+        for place,item in enumerate(Line):
+            if item.find("AN") !=-1:
+                Anch_name.append(item)
+                Anch_place.append(place)
+        for i in range(len(Anch_place)):
+            print("Anchor {0} is named {1} At located at {2} {3} {4}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+3],Line[Anch_place[i]+3]))
+        print()
+        return(num_anchor)
+>>>>>>> Stashed changes
 
 ## Function to return and print the tag's position from the 'apg' command
 def get_tag(Line):
@@ -95,6 +110,7 @@ def proccess_cov(Pc):
     Pc[1][0] = 0.0
     return(Pc)
 
+<<<<<<< Updated upstream
 ## Function to predict the future State
 def predict_state(x_est,Accel_list):
     Accel = np.array([[Accel_list[0]],[Accel_list[1]]],dtype=float)
@@ -116,6 +132,8 @@ def update_state(X_est,Tag_loc,KG):
     X_est = X_est + np.dot(KG,num)
     return(X_est)
 
+=======
+>>>>>>> Stashed changes
 ## Displays an error signal if one of the anchor node is malfunctioning
 def anchor_error(line,num_anchor):
     Line = line.split(",")
