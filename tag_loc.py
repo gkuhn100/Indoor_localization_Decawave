@@ -30,7 +30,7 @@ if ser.isOpen:
     line = ser.write("\r\r".encode())
     time.sleep(1)
 
-    #Function to print measured value of position
+    # Function to print measured value of position
 def print_pos():
     ser.write('apg\r'.encode())
     line = ser.readline()
@@ -41,7 +41,7 @@ def print_pos():
     else:
         return()
 
-       #Function to get measured value of position(with measured error)
+     # Function to get measured value of position(with measured error)
 def get_pos(parse):
     X_pos = float(parse[0].strip('x:'))*1e-3
     Y_pos = float(parse[1].strip('y:'))*1e-3
