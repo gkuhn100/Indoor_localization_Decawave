@@ -11,8 +11,8 @@ count = 0
 
 ## Establish a serial coonection
 baudrate = 115200
-port1 = "/dev/ttyACM0"
-port2 = "/dev/ttyAMA0"
+port1 = "/dev/ttyACM1"
+port2 = "/dev/ttyACM2"
 tag1 = serial.Serial(port1, baudrate, timeout = 1) ##tag_apg
 tag2 = serial.Serial(port2, baudrate, timeout = 1) ##lec
 time.sleep(1)
@@ -45,12 +45,12 @@ def print_apg(q):
 
 ## Sorts the results from the apg command; provided it was previosuly decoded. returns tag and Quality Factor
 def sort_apg(line):
-    Line = line.split(",")
+    Line = line.split(" ")
     Line = Line[1:]
-    print(Line)
     X_pos = (Line[0].strip('x:'))
     Y_pos = (Line[1].strip('y:'))
-    Qf =    (Line[3].strip('qf:'))
+    ##Qf =    (Line[3].strip('qf:'))
+    Qf = 67
     tag_apg = [X_pos,Y_pos]
     return(tag_apg, Qf)
 
@@ -58,16 +58,15 @@ def sort_apg(line):
 ## Sorts the Results of the command after "lec" has been entered
 def sort_lec(line):
     line = line.decode()
-    line = line.split('')
+    line = line.split()
     if len(line) > 10 and line.find('DIST') != -1:
-        count +=1
         for place,item in enumerate(line):
             if item.find('POS') != -1:
                 pos = place + 1
                 tag_lec = line[pos:]
                 return(tag_lec)
     else:
-        return(false)
+        return(False)
 
 ## Function to determine if the tag node is indeed stationary
 def det_stationary(tag_lec, tag_apg, Accel):
@@ -83,7 +82,7 @@ def print_anchor(lec_pos):
     Anch_place = []
     line = lec_pos.split(",")
     num_anchor = line[1]
-    print(f"There are {num_anchor} Anchors in the setup)
+    print(f"There are {num_anchor} Anchors in the setup")
     for place,item in enumerate(line):
         if item.find != -1:
             Anch_name.append(item)
@@ -94,12 +93,13 @@ def print_anchor(lec_pos):
     return(num_anchor)
 
 if __name__ == "__main__":
+    count = 0
     dT = 0.0
-    tag_lec = tag2.readline()
-    lec_pos = sort_lec(tag_lec)
-    if count == 1:
-        print_anchor()
-    while True and count > 5:
+    ##tag_lec = tag2.readline()
+    
+    while True:
+        tag_lec = tag2.readline()
+        print(tag_lec)
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
@@ -107,8 +107,8 @@ if __name__ == "__main__":
         p1.join()
         while q.empty() is False:
             tag_apg = q.get()
-            tag_apg = tag_apg.decode()
-        if len(tag_apg) > 30  and tag_loc.find('apg') != -1:
+            tag_apg = tag_apg.decode('ascii')
+        if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
             tag_loc,qf = sort_apg(tag_apg)
             accel = get_accel()
             dT = time.time() - dT
