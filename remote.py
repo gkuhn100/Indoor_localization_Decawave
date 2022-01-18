@@ -6,7 +6,10 @@ import multiprocessing as mp
 from sense_hat import SenseHat
 sense = SenseHat()
 
-## Establish a serial coonection
+## Global Vaiables
+Count = 0
+
+## Attempt to Establish a serial coonection
 baudrate = 115200
 port1 = "/dev/ttyACM1"
 port2 = "/dev/ttyACM2"
@@ -44,6 +47,7 @@ def print_apg(q):
 def sort_apg(line):
     Line = line.split(" ")
     Line = Line[1:]
+    #print(Line)
     X_pos = (Line[0].strip('x:'))
     Y_pos = (Line[1].strip('y:'))
     Qf =    (Line[3].strip('qf:'))
@@ -53,11 +57,10 @@ def sort_apg(line):
 
 ## Sorts the Results of the command after "lec" has been entered
 def sort_lec(line):
-    global Count = 0
     line = line.decode()
     line = line.split(',')
     if len(line) > 10 and line.find('DIST') != -1:
-        Count +=1
+        global Count +=1
         for place,item in enumerate(line):
             if item.find('POS') != -1:
                 pos = place + 1
@@ -70,9 +73,9 @@ def sort_lec(line):
 ## Function to determine if the tag node is indeed stationary
 def det_stationary(tag_lec, tag_apg, Accel):
     if (tag_lec == False):
-        tag_pos = 1
+        print(f"The tag is )
     else:
-        tag_pos = 0.0
+        print(f"the apg command says the tag is at location {tag_apg}, the lec command says tag is at {tag_lec} ")
     return(tag_pos)
 
 ## Function that displays the position and status of the anchor
@@ -93,16 +96,11 @@ def print_anchor(lec_pos):
 
 if __name__ == "__main__":
     dT = 0.0
-    Global Count
-    count = 0
     while True:
         tag_lec = tag2.readline()
         tag_pos_lec = sort_lec(tag_lec)
-        if (tag_pos_lec) != false:
-            count +=1
-        if count == 1:
+        if Count == 1:
             print_anchor()
-            print(f"The count is {Count})
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
@@ -111,10 +109,11 @@ if __name__ == "__main__":
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
+            ##print(f"The Goal here is to {tag_apg} {type(tag_apg)}")
         if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
             tag_loc,qf = sort_apg(tag_apg)
             accel = get_accel()
-            tag_pos = det_stationary(tag_lec, tag_apg, Accel)
+            ##tag_pos = det_stationary(tag_lec, tag_apg, Accel)
             dT = time.time() - dT
             print(f"At time {time_now} the tag estimate is {tag_loc} and accelerating at {accel} m/s^2")
             time.sleep(1)
