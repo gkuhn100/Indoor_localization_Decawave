@@ -8,6 +8,7 @@ sense = SenseHat()
 
 ## Global Variables
 count = 0
+init = False
 
 ## Establish a serial coonection
 baudrate = 115200
@@ -54,12 +55,13 @@ def sort_apg(line):
     tag_apg = [X_pos,Y_pos]
     return(tag_apg, Qf)
 
-
 ## Sorts the Results of the command after "lec" has been entered
 def sort_lec(line):
+    global count
     line = line.decode()
     line = line.split()
     if len(line) > 10 and line.find('DIST') != -1:
+        count +=1
         for place,item in enumerate(line):
             if item.find('POS') != -1:
                 pos = place + 1
@@ -68,18 +70,12 @@ def sort_lec(line):
     else:
         return(False)
 
-## Function to determine if the tag node is indeed stationary
-def det_stationary(tag_lec, tag_apg, Accel):
-    if (tag_lec):
-        tag_pos = 1
-    else:
-        tag_pos = 0.0
-    return(tag_pos)
-
 ## Function which displays if the position of the anchor
-def print_anchor(lec_pos):
+def print_anchor(line):
+    global count
     Anch_name =  []
     Anch_place = []
+    line = line.decode()
     line = lec_pos.split(",")
     num_anchor = line[1]
     print(f"There are {num_anchor} Anchors in the setup")
@@ -92,17 +88,26 @@ def print_anchor(lec_pos):
     print()
     return(num_anchor)
 
+## Function to determine if the tag node is indeed stationary
+def det_stationary(tag_lec, tag_apg, Accel):
+    if (tag_lec):
+        tag_pos = 1
+    else:
+        tag_pos = 0.0
+    return(tag_pos)
+
 if __name__ == "__main__":
-    count = 0
-    dT = 0.0
-    
     while True:
         tag_lec = tag2.readline()
+        lec_pos = sort_lec(tag_lec)
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
+        if count == 3 and init == True:
+            print_anchor(lec_pos)
+            init = False
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
