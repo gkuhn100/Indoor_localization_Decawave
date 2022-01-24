@@ -75,13 +75,6 @@ def print_anchor(line):
     line = line.split(",")
     num_anchor = line[1]
     print(f"There are {num_anchor} Anchors in the setup")
-    for place,item in enumerate(line):
-        if item.find != -1:
-            Anch_name.append(item)
-            Anch_place.append(place)
-    for i in range(len(Anch_place)):
-        print("Anchor {0} is named {1} and located at {2} {3} {4}".format(Anch_name[i],line[Anch_place[i]+1],line[Anch_place[i]+2],line[Anch_place[i]+3],line[Anch_place[i]+4]))
-    print()
     return(num_anchor)
 
 ## Function to determine if the tag node is indeed stationary
