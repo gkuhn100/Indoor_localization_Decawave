@@ -76,7 +76,7 @@ def print_anchor(line):
     Anch_name =  []
     Anch_place = []
     line = line.decode()
-    line = lec_pos.split(",")
+    line = line.split(",")
     num_anchor = line[1]
     print(f"There are {num_anchor} Anchors in the setup")
     for place,item in enumerate(line):
@@ -99,21 +99,27 @@ def det_stationary(tag_lec, tag_apg, Accel):
 if __name__ == "__main__":
     while True:
         tag_lec = tag2.readline()
-        lec_pos = sort_lec(tag_lec)
+        tag_line = tag_lec.decode('UTF-8')
+        tag_loc = tag_line.split(',')
+        if (len(tag_loc) > 25) and tag_line.find('DIST') != -1:
+            tag2.write("lec\r".encode())
+            print(tag_loc)
+            #print(f"The length of the line {tag_loc},is {len(tag_loc)}")
+        ##lec_pos = sort_lec(tag_lec)
+        ##print(lec_pos)
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
         if count == 3 and init == True:
-            print_anchor(lec_pos)
-            init = False
+             print_anchor('lec_pos')
+             init = False
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
         if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
             tag_loc,qf = sort_apg(tag_apg)
             accel = get_accel()
-            dT = time.time() - dT
-            print(f"At time {time_now} the tag estimate is {tag_loc} and accelerating at {accel} m/s^2")
+            ##print(f"At time {time_now} the tag estimate is {tag_loc} and accelerating at {accel} m/s^2")
             time.sleep(1)
