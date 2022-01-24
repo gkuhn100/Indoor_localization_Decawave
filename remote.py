@@ -67,14 +67,19 @@ def sort_lec(tag_lec):
         print(count)
 
 ## Function which displays if the position of the anchor
-def print_anchor(line):
-    global count
+def print_anchor(tag_lec):
     Anch_name =  []
     Anch_place = []
-    line = line.decode()
-    line = line.split(",")
-    num_anchor = line[1]
+    lec_tag = tag_lec.decode()
+    lec_pos = lec_tag.split(",")
+    num_anchor = lec_pos[1]
     print(f"There are {num_anchor} Anchors in the setup")
+    for place,item in enumerate(lec_pos):
+        if item.find("AN") !=-1:
+            Anch_name.append(item)
+            Anch_place.append(place)
+    for i in range(len(Anch_place)):
+    print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
     return(num_anchor)
 
 ## Function to determine if the tag node is indeed stationary
@@ -97,6 +102,7 @@ if __name__ == "__main__":
         if count == 3 and init == True:
              print_anchor(tag_lec)
              init = False
+             tag2.write('lec\r'.encode())
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
