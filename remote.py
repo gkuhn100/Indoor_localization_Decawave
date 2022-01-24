@@ -8,7 +8,7 @@ sense = SenseHat()
 
 ## Global Variables
 count = 0
-init = False
+init = True
 
 ## Establish a serial coonection
 baudrate = 115200
@@ -56,19 +56,15 @@ def sort_apg(line):
     return(tag_apg, Qf)
 
 ## Sorts the Results of the command after "lec" has been entered
-def sort_lec(line):
+def sort_lec(tag_lec):
     global count
-    line = line.decode()
-    line = line.split()
-    if len(line) > 10 and line.find('DIST') != -1:
+    lec_tag = tag_lec.decode()
+    lec_line = lec_tag.split(',')
+    time_current = time.time()
+    if len(lec_line) > 10 and lec_tag.find('DIST') != -1:
         count +=1
-        for place,item in enumerate(line):
-            if item.find('POS') != -1:
-                pos = place + 1
-                tag_lec = line[pos:]
-                return(tag_lec)
-    else:
-        return(False)
+        print(time_current)
+        print(count)
 
 ## Function which displays if the position of the anchor
 def print_anchor(line):
@@ -99,21 +95,14 @@ def det_stationary(tag_lec, tag_apg, Accel):
 if __name__ == "__main__":
     while True:
         tag_lec = tag2.readline()
-        tag_line = tag_lec.decode('UTF-8')
-        tag_loc = tag_line.split(',')
-        if (len(tag_loc) > 25) and tag_line.find('DIST') != -1:
-            tag2.write("lec\r".encode())
-            print(tag_loc)
-            #print(f"The length of the line {tag_loc},is {len(tag_loc)}")
-        ##lec_pos = sort_lec(tag_lec)
-        ##print(lec_pos)
+        sort_lec(tag_lec)
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
         if count == 3 and init == True:
-             print_anchor('lec_pos')
+             print_anchor(tag_lec)
              init = False
         while q.empty() is False:
             tag_apg = q.get()
