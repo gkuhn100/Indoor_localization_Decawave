@@ -8,7 +8,7 @@ sense = SenseHat()
 
 ## Global Variables
 count = 0
-init = True
+init = False
 
 ## Establish a serial coonection
 baudrate = 115200
@@ -60,10 +60,8 @@ def sort_lec(tag_lec):
     global count
     lec_tag = tag_lec.decode()
     lec_line = lec_tag.split(',')
-    time_current = time.time()
     if len(lec_line) > 10 and lec_tag.find('DIST') != -1:
         count +=1
-        print(time_current)
         print(count)
 
 ## Function which displays if the position of the anchor
@@ -99,15 +97,16 @@ if __name__ == "__main__":
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
-        if count == 3 and init == True:
+        if count == 3 and init == False:
              print_anchor(tag_lec)
-             init = False
+             init = True
              tag2.write('lec\r'.encode())
-        while q.empty() is False:
-            tag_apg = q.get()
-            tag_apg = tag_apg.decode('ascii')
-        if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
-            tag_loc,qf = sort_apg(tag_apg)
-            accel = get_accel()
-            ##print(f"At time {time_now} the tag estimate is {tag_loc} and accelerating at {accel} m/s^2")
-            time.sleep(1)
+        if init == True:
+            while q.empty() is False:
+                tag_apg = q.get()
+                tag_apg = tag_apg.decode('ascii')
+            if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
+                tag_loc,qf = sort_apg(tag_apg)
+                accel = get_accel()
+                print(f"At time {time_now} the tag estimate is {tag_loc} and accelerating at {accel} m/s^2")
+                time.sleep(1)
