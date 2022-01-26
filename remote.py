@@ -77,7 +77,7 @@ def print_anchor(tag_lec):
             Anch_name.append(item)
             Anch_place.append(place)
     for i in range(len(Anch_place)):
-    print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
+        print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],lec_pos[Anch_place[i]+1],lec_pos[Anch_place[i]+2],lec_pos[Anch_place[i]+2],lec_pos[Anch_place[i]+3]))
     return(num_anchor)
 
 ## Function to determine if the tag node is indeed stationary
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         p1.join()
         if count == 3 and init == False:
              print_anchor(tag_lec)
-             init = True
              tag2.write('lec\r'.encode())
+             init = True         
         if init == True:
             while q.empty() is False:
                 tag_apg = q.get()
