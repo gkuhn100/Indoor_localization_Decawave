@@ -62,7 +62,6 @@ def sort_lec(tag_lec):
     lec_line = lec_tag.split(',')
     if len(lec_line) > 10 and lec_tag.find('DIST') != -1:
         count +=1
-        print(count)
 
 ## Function which displays if the position of the anchor
 def print_anchor(tag_lec):
@@ -77,7 +76,7 @@ def print_anchor(tag_lec):
             Anch_name.append(item)
             Anch_place.append(place)
     for i in range(len(Anch_place)):
-    print("Anchor {0} is named {1} At located at {1} {2} {3}".format(Anch_name[i],Line[Anch_place[i]+1],Line[Anch_place[i]+2],Line[Anch_place[i]+2],Line[Anch_place[i]+3]))
+        print("Anchor {0} is named {1} and located at {2} {3} {4}".format(Anch_name[i],lec_pos[Anch_place[i]+1],lec_pos[Anch_place[i]+2],lec_pos[Anch_place[i]+2],lec_pos[Anch_place[i]+3]))
     return(num_anchor)
 
 ## Function to determine if the tag node is indeed stationary
@@ -90,17 +89,19 @@ def det_stationary(tag_lec, tag_apg, Accel):
 
 if __name__ == "__main__":
     while True:
-        tag_lec = tag2.readline()
-        sort_lec(tag_lec)
+        if init == False:
+            tag_lec = tag2.readline()
+            sort_lec(tag_lec)
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
         if count == 3 and init == False:
-             print_anchor(tag_lec)
+             ##print_anchor(tag_lec)
+             tag2.write("lec\r".encode())
+             print("\n")
              init = True
-             tag2.write('lec\r'.encode())
         if init == True:
             while q.empty() is False:
                 tag_apg = q.get()
