@@ -35,7 +35,9 @@ print('')
 def get_accel():
     accel = sense.get_accelerometer_raw()
     X = round(accel['x'],3) * 9.81
+    X = round(X)
     Y = round(accel['y'],3) * 9.81
+    Y = round(Y)
     Accel = [X,Y]
     return(Accel)
 
@@ -62,6 +64,7 @@ def sort_lec(tag_lec):
     lec_line = lec_tag.split(',')
     if len(lec_line) > 10 and lec_tag.find('DIST') != -1:
         count +=1
+        print(count)
 
 ## Function which displays if the position of the anchor
 def print_anchor(tag_lec):
@@ -75,7 +78,7 @@ def print_anchor(tag_lec):
         if item.find("AN") !=-1:
             Anch_name.append(item)
             Anch_place.append(place)
-            print(f"The tag {item} named {lec_pos[place+1]} is at location {lec_pos[place+2]}, {lec_pos[place+3} {lec_pos[place+4]}" )
+            print(f"The tag {item} named {lec_pos[place+1]} is at location {lec_pos[place+2]}, {lec_pos[place+3]}, {lec_pos[place+4]}" )
 
 ## Function to determine if the tag node is indeed stationary
 def det_stationary(tag_lec, tag_apg, Accel):
