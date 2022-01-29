@@ -69,15 +69,13 @@ def print_anchor(tag_lec):
     Anch_place = []
     lec_tag = tag_lec.decode()
     lec_pos = lec_tag.split(",")
-    num_anchor = lec_pos[1]
+    num_anchor = int(lec_pos[1])
     print(f"There are {num_anchor} Anchors in the setup")
-    for place,item in enumerate(lec_pos):
+    for place, item in enumerate(lec_pos):
         if item.find("AN") !=-1:
             Anch_name.append(item)
             Anch_place.append(place)
-    for i in range(len(Anch_place)):
-        print("Anchor {0} is named {1} and located at {2} {3} {4}".format(Anch_name[i],lec_pos[Anch_place[i]+1],lec_pos[Anch_place[i]+2],lec_pos[Anch_place[i]+2],lec_pos[Anch_place[i]+3]))
-    return(num_anchor)
+            print(f"The tag {item} named {lec_pos[place+1]} is at location {lec_pos[place+2]}, {lec_pos[place+3} {lec_pos[place+4]}" )
 
 ## Function to determine if the tag node is indeed stationary
 def det_stationary(tag_lec, tag_apg, Accel):
