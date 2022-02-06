@@ -3,28 +3,13 @@ import serial
 import time
 import datetime
 import multiprocessing as mp
-import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
-
-## Matrices used in the Kalman Filter
-A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
-At= np.transpose(A) ## Transpose matrix
-B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
-W = np.array([[.05],[0.025]])# Predict State error matrix
-Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
-R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
-I = np.array([[1,0],[0,1]]) #Identity Matrix
-H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
-C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
-Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float) ## initiliaize the Process Covariance Matrix
-delta_X = 0.5 ##Uncertainty in X_position
-delta_Y = 0.5 ##Uncertainty in Y_position
 
 ## Global Variables
 count = 0
 init = False
-dT = 0.0
+dT = 0
 
 ## Establish a serial coonection
 baudrate = 115200
@@ -50,10 +35,10 @@ print('')
 ## Function to print the Acceleration of the tag in the x and y coordinates
 def get_accel():
     accel = sense.get_accelerometer_raw()
-    X = round(accel['x'],3) * 9.81
-    X = round(X)
-    Y = round(accel['y'],3) * 9.81
-    Y = round(Y)
+    X = accel['x'] * 9.81
+    X = round(X,3)
+    Y = accel['y'] * 9.81
+    Y = round(Y,3)
     Accel = [X,Y]
     return(Accel)
 
@@ -95,36 +80,6 @@ def print_anchor(tag_lec):
             Anch_place.append(place)
             print(f"The tag {item} named {lec_pos[place+1]} is at location {lec_pos[place+2]}, {lec_pos[place+3]}, {lec_pos[place+4]}" )
 
-## Function to estimate the tag's position based on previous location and Acceleration
-def predict_state(X_est,Accel):
-    X_est = np.dot(A,est) + np.dot(B,Accel) + W
-    return(X_est)
-
-## Function to update the process covariance matrix
-def proccess_cov(Pc):
-    Pc = np.dot(A,Pc)
-    Pc = np.dot(Pc,At)+Q
-    Pc[0][1] = 0.0
-    Pc[1][0] = 0.0
-    return(Pc)
-
-## Function to calculate the Kalman Gain
-def KalmanGain(X_est,Pc):
-    Kg_num = np.dot(Pc,H)
-    Kg_den = np.dot(H,Pc)
-    Kg_den = np.dot(Kg_den,H) + R
-    Kg     = np.divide(Kg_num,Kg_den)
-    Kg[0][1] = 0.0
-    Kg[1][0] = 0.0
-    return(Kg)
-
-## Update the Predicted State
-def update_state(X_est,tag_apg,KG):
-    num = Tag_loc - np.dot(H,X_est)
-    X_est = X_est + np.dot(KG,num)
-    return(X_est)
-
-
 ## Function to determine if the tag node is indeed stationary
 def det_stationary(tag_lec, tag_apg, Accel):
     if (tag_lec):
@@ -134,8 +89,6 @@ def det_stationary(tag_lec, tag_apg, Accel):
     return(tag_pos)
 
 if __name__ == "__main__":
-    dT = 0.0
-    Time_previous = 0
     while True:
         if init == False:
             tag_lec = tag2.readline()
@@ -155,10 +108,13 @@ if __name__ == "__main__":
                 tag_apg = q.get()
                 tag_apg = tag_apg.decode('ascii')
             if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
+                current_time = time.time()
                 tag_loc,qf = sort_apg(tag_apg)
                 accel = get_accel()
-                print(f"At time {time_now} the tag estimate is {tag_loc} and accelerating at {accel} m/s^2")
-                dT = time_now - Time_previous
-                print(dT)
-                Time_previous = time_now
+                print(f"At time {time_now} the tag estimate is {tag_loc} and is accelerating at {accel} m/s^2")
+                print(f"The estimated position is ")
+                print(f"The Kalman Gains is ")
+                print("The updated position estimate is")
                 time.sleep(1)
+                dT = round((time.time() - current_time),3)
+               
