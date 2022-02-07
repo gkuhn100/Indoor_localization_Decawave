@@ -58,8 +58,8 @@ def get_accel():
     Y = round(Y,3)
     Accel = [X,Y]
     return(Accel)
-    
-    
+
+
 ## Sorts the Results of the command after "lec" has been entered
 def sort_lec(tag_lec):
     global count
@@ -68,7 +68,7 @@ def sort_lec(tag_lec):
     if len(lec_line) > 10 and lec_tag.find('DIST') != -1:
         count +=1
 
-    
+
 ## Function which displays if the position of the anchor
 def print_anchor(tag_lec):
     Anch_name =  []
@@ -97,13 +97,15 @@ def sort_apg(line):
     Y_pos = float((Line[1].strip('y:'))) * 1e-3
     Qf =    (Line[3].strip('qf:'))
     tag_apg = [X_pos,Y_pos]
-    return(tag_apg, Qf) 
+    return(tag_apg, Qf)
+
 
 ## Function to predict the state of the tag based on its previous state estimate and acceleration
 def predict_state(X_est, Accel):
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
-    
+
+
 ## Function to calculate the Kalman Gain
 def Kalman_Gain(X_est,Pc):
     Kg_num = np.dot(Pc,H)
@@ -114,6 +116,7 @@ def Kalman_Gain(X_est,Pc):
     Kg[1][0] = 0.0
     return(Kg)
 
+
 ##Function to update the state estimate; taking in account predicted, measured states and acceleration
 def update_state(X_est,tag_apg,Kg):
     num = tag_apg - np.dot(H,X_est)
@@ -121,6 +124,12 @@ def update_state(X_est,tag_apg,Kg):
     print()
     return(X_est)
 
+def update_PC(Pc):
+    Pc = np.dot(A,Pc)
+    Pc = np.dot(Pc,At)+Q
+    Pc[0][1] = 0.0
+    Pc[1][0] = 0.0
+    return(Pc)
 
 if __name__ == "__main__":
     X_est = np.array([0.0,0.0])
@@ -147,6 +156,7 @@ if __name__ == "__main__":
                 tag_loc,qf = sort_apg(tag_apg)
                 accel = get_accel()
                 X_est = predict_state(X_est,accel)
+                Pc = update_PC(Pc)
                 Kg = Kalman_Gain(X_est,Pc)
                 print(f"At time {time_now} the measured tag positions is {tag_loc} and is accelerating at {accel} m/s^2")
                 print(f"The estimated position is {X_est} ")
@@ -154,4 +164,3 @@ if __name__ == "__main__":
                 print(f"And an updated state estimate of {X_est}")
                 time.sleep(1)
                 dT = round((time.time() - current_time),3)
-               
