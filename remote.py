@@ -132,7 +132,7 @@ def update_PC(Pc):
     return(Pc)
 
 if __name__ == "__main__":
-    X_est = np.array([0.0,0.0])
+    #X_est = np.array([0.0,0.0])
     while True:
         if init == False:
             tag_lec = tag2.readline()
@@ -142,15 +142,18 @@ if __name__ == "__main__":
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
+        while q.empty() is False:
+        tag_apg = q.get()
+        tag_apg = tag_apg.decode('ascii')
+        if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
+            tag_loc,qf = sort_apg(tag_apg)
+            X_est = tag_loc 
         if count == 3 and init == False:
              print_anchor(tag_lec)
              tag2.write("lec\r".encode())
              print("\n")
              init = True
         if init == True:
-            while q.empty() is False:
-                tag_apg = q.get()
-                tag_apg = tag_apg.decode('ascii')
             if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
                 current_time = time.time()
                 tag_loc,qf = sort_apg(tag_apg)
