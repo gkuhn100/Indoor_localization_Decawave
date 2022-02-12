@@ -105,6 +105,13 @@ def predict_state(X_est, Accel):
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
 
+## Function to predict the state of the tag based on its previous state estimate and accelera
+def predict_cov(Pc):
+    global Pc
+    Pc = np.dot(A,Pc)
+    Pc = np.dot(Pc,At) + Q
+    return(Pc)
+
 
 ## Function to calculate the Kalman Gain
 def Kalman_Gain(X_est,Pc):
@@ -116,7 +123,6 @@ def Kalman_Gain(X_est,Pc):
     Kg[1][0] = 0.0
     return(Kg)
 
-
 ##Function to update the state estimate; taking in account predicted, measured states and acceleration
 def update_state(X_est,tag_apg,Kg):
     num = tag_apg - np.dot(H,X_est)
@@ -124,9 +130,10 @@ def update_state(X_est,tag_apg,Kg):
     print()
     return(X_est)
 
-def update_PC(Pc):
-    Pc = np.dot(A,Pc)
-    Pc = np.dot(Pc,At)+Q
+def update_PC(Pc,Kg):
+    global Pc
+    num = I- (np.dot(kg,H))
+    Pc = np.dot(num,Pc)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
@@ -147,7 +154,7 @@ if __name__ == "__main__":
         tag_apg = tag_apg.decode('ascii')
         if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
             tag_loc,qf = sort_apg(tag_apg)
-            X_est = tag_loc 
+            X_est = tag_loc
         if count == 3 and init == False:
              print_anchor(tag_lec)
              tag2.write("lec\r".encode())
