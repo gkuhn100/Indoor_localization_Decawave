@@ -9,12 +9,11 @@ sense = SenseHat()
 
 ## Global Variables
 count = 0 ## counter variable incremented when the "tag_lec" has detected something
-dT = 0  ## time elapsed netween tag_apg
+dT = 0  ## time elapsed between tag_apg
 delta_X = 0.5 ##Uncertainty in X_position
 delta_Y = 0.5 ##Uncertainty in Y_position
 init = False ## variable that is initliazed once the print_anchor has been called
-iteration = 0 
-
+iteration = 0
 
 ## Matrices used in the Kalman Filter
 A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
@@ -59,7 +58,6 @@ def get_accel():
     Y = round(Y,3)
     Accel = [X,Y]
     return(Accel)
-
 
 ## Sorts the Results of the command after "lec" has been entered
 def sort_lec(tag_lec):
@@ -142,24 +140,24 @@ if __name__ == "__main__":
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
         ## The sequence ofcode below calls the apg_return function and decodes the tag_position
-        q  = mp.Queue() 
+        q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
         p1.start()
         p1.join()
         while q.empty() is False:
             tag_apg = q.get()
-            tag_apg = tag_apg.decode('ascii')      
-            
+            tag_apg = tag_apg.decode('ascii')
+
         if init == False: ## This is done simply to get the position of nodes from "lec" command
             tag_lec = tag2.readline()
-            sort_lec(tag_lec)        
-            
+            sort_lec(tag_lec)
+
         ## Once there have been three succesfully iterations print anchor and cancel the "lec"
         if count == 3 and init == False:
              print_anchor(tag_lec)
              tag2.write("lec\r".encode())
              print("\n")
-             init = True   
+             init = True
         #Now that init is true the stuff begins as normal
         if init == True:
             if len(tag_apg) > 20 and tag_apg.find('apg') !=-1:
@@ -167,17 +165,18 @@ if __name__ == "__main__":
                 if iteration == 0:
                    tag_loc,qf = sort_apg(tag_apg)
                    X_est = tag_loc
-                   print(f"At time {time_now} the observed tag position is {tag_loc} and is accelerating at {accel} m/s^2\n")
+                   print(f"At {iteration} and time {time_now} the observed tag position is {tag_loc} and is accelerating at {accel} m/s^2\n")
                 else:
                      X_est = predict_state(X_est,accel)
-                     print(f"At time {time_now} the predicted state is {X_est} and is accelerating at {accel} m/s^2 ")
+                     print(f"At iteration {iteration} and time {time_now} the predicted state is {X_est} and is accelerating at {accel} m/s^2 ")
                      Pc = predict_cov(Pc)
                      Kg = Kalman_Gain(X_est,Pc)
+                     print(f"With a Process Covariance of {Pc} and a Kalman Gain of {Kg}")
                      tag_loc,qf = sort_apg(tag_apg)
                      X_est = update_state(X_est,tag_loc,Kg)
-                     print(f"The observed state is {tag_loc}")
-                     print(f"The update state is {tag_loc}")
                      Pc = update_PC(Pc,Kg)
+                     print(f"The observed state is {tag_loc}")
+                     print(f"The updated state is therefore {tag_loc} with an updated Pc of {Pc}")
                 time.sleep(1)
                 dT = round((time.time() - current_time),3)
                 iteration += 1
