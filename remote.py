@@ -36,6 +36,20 @@ tag1 = serial.Serial(port1, baudrate, timeout = 1) ##tag_apg
 tag2 = serial.Serial(port2, baudrate, timeout = 1) ##lec
 time.sleep(1)
 
+## Matrices used in the Kalman Filter
+A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
+At= np.transpose(A) ## Transpose matrix
+B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
+W = np.array([[.05],[0.025]])# Predict State error matrix
+Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
+R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
+I = np.array([[1,0],[0,1]]) #Identity Matrix
+H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
+C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
+Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float) ## initiliaize the Process Covariance Matrix
+delta_X = 0.5 ##Uncertainty in X_position
+delta_Y = 0.5 ##Uncertainty in Y_position
+
 ## Tag1 is used for the "apg" command. Solely to get the position of the tag
 if tag1.isOpen:
     print(f"{tag1.name} is open and connected to port1 ")
@@ -59,7 +73,10 @@ def get_accel():
     Accel = [X,Y]
     return(Accel)
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 ## Sorts the Results of the command after "lec" has been entered
 def sort_lec(tag_lec):
     global count
@@ -99,6 +116,7 @@ def sort_apg(line):
     tag_apg = [X_pos,Y_pos]
     return(tag_apg, Qf)
 
+<<<<<<< Updated upstream
 
 ## Function to predict the state of the tag based on its previous state estimate and acceleration
 def predict_state(X_est, Accel):
@@ -135,8 +153,14 @@ def update_PC(Pc,Kg):
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
+=======
+def predict_state(X_est,Accel):
+    X_est =
+
+>>>>>>> Stashed changes
 
 if __name__ == "__main__":
+
     while True:
         if init == False:
             tag_lec = tag2.readline()
