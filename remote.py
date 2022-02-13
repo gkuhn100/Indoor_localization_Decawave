@@ -107,7 +107,6 @@ def predict_state(X_est, Accel):
 
 ## Function to predict the state of the tag based on its previous state estimate and accelera
 def predict_cov(Pc):
-    global Pc
     Pc = np.dot(A,Pc)
     Pc = np.dot(Pc,At) + Q
     return(Pc)
@@ -131,15 +130,13 @@ def update_state(X_est,tag_apg,Kg):
     return(X_est)
 
 def update_PC(Pc,Kg):
-    global Pc
-    num = I- (np.dot(kg,H))
+    num = I- (np.dot(Kg,H))
     Pc = np.dot(num,Pc)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
 
 if __name__ == "__main__":
-    #X_est = np.array([0.0,0.0])
     while True:
         if init == False:
             tag_lec = tag2.readline()
@@ -150,8 +147,8 @@ if __name__ == "__main__":
         p1.start()
         p1.join()
         while q.empty() is False:
-        tag_apg = q.get()
-        tag_apg = tag_apg.decode('ascii')
+            tag_apg = q.get()
+            tag_apg = tag_apg.decode('ascii')
         if len(tag_apg) > 20 and tag_apg.find('apg') != -1:
             tag_loc,qf = sort_apg(tag_apg)
             X_est = tag_loc
@@ -166,11 +163,12 @@ if __name__ == "__main__":
                 tag_loc,qf = sort_apg(tag_apg)
                 accel = get_accel()
                 X_est = predict_state(X_est,accel)
-                Pc = update_PC(Pc)
+                Pc = predict_cov(Pc)
                 Kg = Kalman_Gain(X_est,Pc)
-                print(f"At time {time_now} the measured tag positions is {tag_loc} and is accelerating at {accel} m/s^2")
+                print(f"At time {time_now} the Observed tag positions is {tag_loc} and is accelerating at {accel} m/s^2")
                 print(f"The estimated position is {X_est} ")
                 X_est = update_state(X_est,tag_loc,Kg)
+                Pc = update_PC(Pc,Kg)
                 print(f"And an updated state estimate of {X_est}")
                 time.sleep(1)
                 dT = round((time.time() - current_time),3)
