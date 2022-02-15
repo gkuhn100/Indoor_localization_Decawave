@@ -17,8 +17,7 @@ iteration = 0
 
 ## Matrices used in the Kalman Filter
 A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
-At= np.transpose(A) ## Transpose matrix
-B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
+At= np.transpose(A) ## Transpose
 W = np.array([[.05],[0.025]])# Predict State error matrix
 Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
 R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
@@ -92,8 +91,8 @@ def print_apg(q):
 def sort_apg(line):
     Line = line.split(" ")
     Line = Line[1:]
-    X_pos = float((Line[0].strip('x:'))) * 1e-3
-    Y_pos = float((Line[1].strip('y:'))) * 1e-3
+    X_pos = float((Line[0].strip('x:'))) * 1e-3 + .05
+    Y_pos = float((Line[1].strip('y:'))) * 1e-3 + .05
     Qf =    (Line[3].strip('qf:'))
     tag_apg = [X_pos,Y_pos]
     return(tag_apg, Qf)
@@ -101,6 +100,8 @@ def sort_apg(line):
 
 ## Function to predict the state of the tag based on its previous state estimate and acceleration
 def predict_state(X_est, Accel):
+    global dT
+    B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
 
@@ -108,8 +109,9 @@ def predict_state(X_est, Accel):
 def predict_cov(Pc):
     Pc = np.dot(A,Pc)
     Pc = np.dot(Pc,At) + Q
+    Pc[0][1] = 0.0
+    Pc[1][0] = 0.0
     return(Pc)
-
 
 ## Function to calculate the Kalman Gain
 def Kalman_Gain(X_est,Pc):
@@ -139,7 +141,6 @@ if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        ## The sequence ofcode below calls the apg_return function and decodes the tag_position
         q  = mp.Queue()
         p1 = mp.Process(target = print_apg(q))
         p1.start()
@@ -147,36 +148,32 @@ if __name__ == "__main__":
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
-
-        if init == False: ## This is done simply to get the position of nodes from "lec" command
+        if init == False: 
             tag_lec = tag2.readline()
             sort_lec(tag_lec)
-
-        ## Once there have been three succesfully iterations print anchor and cancel the "lec"
         if count == 3 and init == False:
              print_anchor(tag_lec)
              tag2.write("lec\r".encode())
              print("\n")
              init = True
-        #Now that init is true the stuff begins as normal
         if init == True:
             if len(tag_apg) > 20 and tag_apg.find('apg') !=-1:
                 current_time = time.time()
                 if iteration == 0:
                    tag_loc,qf = sort_apg(tag_apg)
                    X_est = tag_loc
-                   print(f"At {iteration} and time {time_now} the observed tag position is {tag_loc} and is accelerating at {accel} m/s^2\n")
+                   print(f"At iteration {iteration} and time {time_now} the observed tag position is {tag_loc} and is accelerating at {accel} m/s^2\n")
                 else:
                      X_est = predict_state(X_est,accel)
-                     print(f"At iteration {iteration} and time {time_now} the predicted state is {X_est} and is accelerating at {accel} m/s^2 ")
-                     Pc = predict_cov(Pc)
+                     predict = X_est
                      Kg = Kalman_Gain(X_est,Pc)
-                     print(f"With a Process Covariance of {Pc} and a Kalman Gain of {Kg}")
+                     ##print(f"With a Process Covariance of {Pc} and a Kalman Gain of {Kg}")
                      tag_loc,qf = sort_apg(tag_apg)
                      X_est = update_state(X_est,tag_loc,Kg)
                      Pc = update_PC(Pc,Kg)
+                     print(f"At iteration {iteration} and time {time_now} the predicted state is {predict} and is accelerating at {accel} m/s^2 ")
                      print(f"The observed state is {tag_loc}")
-                     print(f"The updated state is therefore {tag_loc} with an updated Pc of {Pc}")
+                     print(f"The updated state is therefore {X_est} ")
                 time.sleep(1)
                 dT = round((time.time() - current_time),3)
                 iteration += 1
