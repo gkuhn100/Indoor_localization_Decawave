@@ -26,6 +26,7 @@ H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
 Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float) ## initiliaize the Process Covariance Matrix
 
+
 ## Establish a serial coonection
 baudrate = 115200
 port1 = "/dev/ttyACM0"
@@ -89,8 +90,8 @@ def print_apg(q):
 def sort_apg(line):
     Line = line.split(" ")
     Line = Line[1:]
-    X_pos = float((Line[0].strip('x:'))) * 1e-3 + .05
-    Y_pos = float((Line[1].strip('y:'))) * 1e-3 + .05
+    X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
+    Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
     Qf =    (Line[3].strip('qf:'))
     tag_apg = [X_pos,Y_pos]
     return(tag_apg, Qf)
@@ -137,36 +138,35 @@ def update_PC(Pc,Kg):
 
 if __name__ == "__main__":
     while True:
-        try:
-            time_now = datetime.datetime.now().strftime("%H:%M:%S")
-            accel = get_accel()
-            q  = mp.Queue()
-            p1 = mp.Process(target = print_apg(q))
-            p1.start()
-            p1.join()
-            while q.empty() is False:
-                tag_apg = q.get()
-                tag_apg = tag_apg.decode('ascii')
-            if init == False:
-                tag_lec = tag2.readline()
-                sort_lec(tag_lec)
-            if count == 3 and init == False:
-                 print_anchor(tag_lec)
-                 tag2.write("lec\r".encode())
-                 print("\n")
-                 init = True
-            if init == True:
+        time_now = datetime.datetime.now().strftime("%H:%M:%S")
+        accel = get_accel()
+        q  = mp.Queue()
+        p1 = mp.Process(target = print_apg(q))
+        p1.start()
+        p1.join()
+        while q.empty() is False:
+            tag_apg = q.get()
+            tag_apg = tag_apg.decode('ascii')
+        if init == False: 
+            tag_lec = tag2.readline()
+            sort_lec(tag_lec)
+        if count == 3 and init == False:
+             print_anchor(tag_lec)
+             tag2.write("lec\r".encode())
+             print("\n")
+             init = True
+        if init == True:
+            try:
                 if len(tag_apg) > 20 and tag_apg.find('apg') !=-1:
                     current_time = time.time()
                     if iteration == 0:
                        tag_loc,qf = sort_apg(tag_apg)
                        X_est = tag_loc
-                       print(f"At iteration {iteration} and time {time_now} the observed tag position is {tag_loc} and is accelerating at {accel} m/s^2\n")
+                       print(f"At iteration {iteration} and time {time_now} the observed tag position is {tag_loc} ")
                     else:
                          X_est = predict_state(X_est,accel)
                          predict = X_est
                          Kg = Kalman_Gain(X_est,Pc)
-                         ##print(f"With a Process Covariance of {Pc} and a Kalman Gain of {Kg}")
                          tag_loc,qf = sort_apg(tag_apg)
                          X_est = update_state(X_est,tag_loc,Kg)
                          Pc = update_PC(Pc,Kg)
@@ -175,8 +175,8 @@ if __name__ == "__main__":
                          print(f"The updated state is therefore {X_est} ")
                     time.sleep(1)
                     dT = round((time.time() - current_time),3)
-                    print(f"The time elapsed is {dT}")
                     iteration += 1
             except KeyboardInterrupt:
-                 tag1.close()
-                 tag2.close()
+                print("Error! keybord interrupt detected, now closing the ports")
+                tag1.close()
+                tag2.close()
