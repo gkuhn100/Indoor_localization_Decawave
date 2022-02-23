@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
-
+np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
 ## Global Variables
 count = 0 ## counter variable incremented when the "tag_lec" has detected something
 dT = 0  ## time elapsed between tag_apg
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
-        if init == False: 
+        if init == False:
             tag_lec = tag2.readline()
             sort_lec(tag_lec)
         if count == 3 and init == False:
