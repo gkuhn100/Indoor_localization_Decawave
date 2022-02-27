@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
-np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
+np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 ## Global Variables
 count = 0 ## counter variable incremented when the "tag_lec" has detected something
 dT = 0  ## time elapsed between tag_apg
@@ -19,7 +19,7 @@ iteration = 0
 A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
 At= np.transpose(A) ## Transpose
 W = np.array([[.05],[0.025]])# Predict State error matrix
-Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
+Q = np.array([[0.05],[0.05]]) #Error in the Predict State Matrix
 R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
 I = np.array([[1,0],[0,1]]) #Identity Matrix
 H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
@@ -100,6 +100,7 @@ def sort_apg(line):
 ## Function to predict the state of the tag based on its previous state estimate and acceleration
 def predict_state(X_est, Accel):
     global dT
+    ##print(dT)
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
@@ -147,7 +148,7 @@ if __name__ == "__main__":
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
-        if init == False:
+        if init == False: 
             tag_lec = tag2.readline()
             sort_lec(tag_lec)
         if count == 3 and init == False:
@@ -168,11 +169,14 @@ if __name__ == "__main__":
                          predict = X_est
                          Kg = Kalman_Gain(X_est,Pc)
                          tag_loc,qf = sort_apg(tag_apg)
+                         print(f"The quality factor is {qf}")
                          X_est = update_state(X_est,tag_loc,Kg)
                          Pc = update_PC(Pc,Kg)
                          print(f"At iteration {iteration} and time {time_now} the predicted state is {predict} and is accelerating at {accel} m/s^2 ")
                          print(f"The observed state is {tag_loc}")
+                         print(f"The Kalman Gain is {Kg}")
                          print(f"The updated state is therefore {X_est} ")
+                         ##print(f"The process covariance matrix is {Pc}")
                     time.sleep(1)
                     dT = round((time.time() - current_time),3)
                     iteration += 1
