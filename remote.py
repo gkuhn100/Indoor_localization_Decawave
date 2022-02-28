@@ -7,6 +7,7 @@ import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+
 ## Global Variables
 count = 0 ## counter variable incremented when the "tag_lec" has detected something
 dT = 0  ## time elapsed between tag_apg
@@ -25,7 +26,6 @@ I = np.array([[1,0],[0,1]]) #Identity Matrix
 H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
 Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float) ## initiliaize the Process Covariance Matrix
-
 
 ## Establish a serial coonection
 baudrate = 115200
@@ -79,23 +79,29 @@ def print_anchor(tag_lec):
             Anch_name.append(item)
             Anch_place.append(place)
             print(f"The tag {item} named {lec_pos[place+1]} is at location {lec_pos[place+2]}, {lec_pos[place+3]}, {lec_pos[place+4]}" )
-
+    return(num_anchor)
 ## enters command 'apg' and gets the results returned from this line
 def print_apg(q):
     tag1.write("apg\r".encode())
     line = tag1.readline()
     q.put(line)
 
-## Sorts the results from the apg command; provided it was previosuly decoded. returns tag and Quality Factor
+## Sorts the results from the apg command; provided it was previosuly decoded. returns tag location
 def sort_apg(line):
     Line = line.split(" ")
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
-    Qf =    (Line[3].strip('qf:'))
+    ##Qf =    (Line[3].strip('qf:'))
     tag_apg = [X_pos,Y_pos]
-    return(tag_apg, Qf)
+    return(tag_apg)
 
+##Function to return the quality factor
+def sort_qf(line):
+    Line = line.split(" ")
+    Line = Line[1:]
+    Qf =    (Line[3].strip('qf:'))
+    return(Qf)
 
 ## Function to predict the state of the tag based on its previous state estimate and acceleration
 def predict_state(X_est, Accel):
@@ -130,12 +136,18 @@ def update_state(X_est,tag_apg,Kg):
     print()
     return(X_est)
 
+##Function to update the process covariance matrix
 def update_PC(Pc,Kg):
     num = I- (np.dot(Kg,H))
     Pc = np.dot(num,Pc)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
+
+##Function which runs if and only if an anchor node malfunctions
+def missing_anchor(tag_pos,kg,accel):
+    print('eh')
+
 
 if __name__ == "__main__":
     while True:
@@ -148,11 +160,11 @@ if __name__ == "__main__":
         while q.empty() is False:
             tag_apg = q.get()
             tag_apg = tag_apg.decode('ascii')
-        if init == False: 
+        if init == False:
             tag_lec = tag2.readline()
             sort_lec(tag_lec)
         if count == 3 and init == False:
-             print_anchor(tag_lec)
+             num_anchor=print_anchor(tag_lec)
              tag2.write("lec\r".encode())
              print("\n")
              init = True
@@ -161,22 +173,31 @@ if __name__ == "__main__":
                 if len(tag_apg) > 20 and tag_apg.find('apg') !=-1:
                     current_time = time.time()
                     if iteration == 0:
-                       tag_loc,qf = sort_apg(tag_apg)
+                        qf = sort_qf(tag_apg)
+                       tag_loc = sort_apg(tag_apg)
                        X_est = tag_loc
                        print(f"At iteration {iteration} and time {time_now} the observed tag position is {tag_loc} ")
                     else:
                          X_est = predict_state(X_est,accel)
                          predict = X_est
-                         Kg = Kalman_Gain(X_est,Pc)
-                         tag_loc,qf = sort_apg(tag_apg)
-                         print(f"The quality factor is {qf}")
-                         X_est = update_state(X_est,tag_loc,Kg)
-                         Pc = update_PC(Pc,Kg)
-                         print(f"At iteration {iteration} and time {time_now} the predicted state is {predict} and is accelerating at {accel} m/s^2 ")
-                         print(f"The observed state is {tag_loc}")
-                         print(f"The Kalman Gain is {Kg}")
-                         print(f"The updated state is therefore {X_est} ")
-                         ##print(f"The process covariance matrix is {Pc}")
+                         qf = sort_qf(tag_apg)
+                         if (qf > 0 ):
+                             tag_loc= sort_apg(tag_apg)
+                             Kg = Kalman_Gain(X_est,Pc)
+                             X_est = update_state(X_est,tag_loc,Kg)
+                             Pc = update_PC(Pc,Kg)
+                             print(f"The quality factor is {qf}")
+                             print(f"At iteration {iteration} and time {time_now} the predicted state is {predict} and is accelerating at {accel} m/s^2 ")
+                             print(f"The observed state is {tag_loc}")
+                             print(f"The Kalman Gain is {Kg}")
+                             print(f"The updated state is therefore {X_est} ")
+                             ##print(f"The process covariance matrix is {Pc}")
+                        elif q == 0:
+                            X_est = predict_state(X_est,accel)
+                            tag_loc = X_est
+                            print(f"Warining the tag node is currently out of the LOS! The estimated position is {tag_loc}")
+                        elif num_anchor > current_anchor:
+
                     time.sleep(1)
                     dT = round((time.time() - current_time),3)
                     iteration += 1
