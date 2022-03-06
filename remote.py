@@ -15,7 +15,8 @@ delta_X = 0.5 ##Uncertainty in X_position
 delta_Y = 0.5 ##Uncertainty in Y_position
 init = False ## variable that is initliazed once the print_anchor has been called
 iteration = 0 ## Variable used to count the total number of iterations run
-LOS = False 
+LOS = False ## Variable to determine if the tag is out of the LOS we oringally assume it is
+Stat = False ## Variable to determine if the tag is stationary or not
 
 ## Matrices used in the Kalman Filter
 A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
@@ -28,7 +29,7 @@ H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
 Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float) ## initiliaize the Process Covariance Matrix
 
-## Establish a serial coonection
+## Establish a serial connection
 baudrate = 115200
 port1 = "/dev/ttyACM0"
 port2 = "/dev/ttyACM1"
@@ -81,6 +82,7 @@ def print_anchor(tag_lec):
             Anch_place.append(place)
             print(f"The tag {item} named {lec_pos[place+1]} is at location {lec_pos[place+2]}, {lec_pos[place+3]}, {lec_pos[place+4]}" )
     return(num_anchor)
+
 ## enters command 'apg' and gets the results returned from this line
 def print_apg(q):
     tag1.write("apg\r".encode())
@@ -107,7 +109,6 @@ def sort_qf(line):
 ## Function to predict the state of the tag based on its previous state estimate and acceleration
 def predict_state(X_est, Accel):
     global dT
-    ##print(dT)
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
@@ -131,7 +132,7 @@ def Kalman_Gain(X_est,Pc):
     if LOS == True:
         Kg = np.array([[.833,0.0],[0.0,.833]])
         LOS = False
-    else:  
+    else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
         Kg_den = np.dot(Kg_den,H) + R
@@ -156,11 +157,21 @@ def update_PC(Pc,Kg):
     return(Pc)
 
 ##Function which runs if and only if an anchor node malfunctions
-def missing_anchor(tag_pos,kg,accel):
+def missing_anchor(tag_pos,kg,Pc,accel):
     print('Anchor node has malfunctined')
     ## Determine missing Anchor
-    ## Determine distance from 
+    ## Determine tags position from missing anchor
+    ## If far away do nothing; if closeby do adjust kalman filter and prediction
 
+##Function to determine if the tag is stationary or not; this function will run soley based on
+## on the 'apg' tag' node at this time. In the future may include the 'lec' tag
+
+def stationary(tag_apg,accel):
+    global iteration
+    tag_pos_apg = []
+    accel_list = []
+    tag_pos_apg.append(tag_apg)
+    accel_list.append(accel)
 
 if __name__ == "__main__":
     while True:
@@ -197,7 +208,7 @@ if __name__ == "__main__":
                              predict = X_est
                              tag_loc= sort_apg(tag_apg)
                              Kg = Kalman_Gain(X_est,Pc)
-                             X_est = update_state(X_est,tag_loc,Kg) 
+                             X_est = update_state(X_est,tag_loc,Kg)
                              Pc = update_PC(Pc,Kg)
                              print(f"The quality factor is {qf}")
                              print(f"At iteration {iteration} and time {time_now} the predicted state is {predict} and is accelerating at {accel} m/s^2 ")
@@ -211,7 +222,7 @@ if __name__ == "__main__":
                             print(f"Warining the tag node is currently out of the LOS! The estimated position is {X_est} and is accelerating at {accel}m/s^2")
                          #elif num_anchor > current_anchor:
                              #missing_anchor(tag_loc,Kg,accel)
-                             
+
                     time.sleep(1)
                     dT = round((time.time() - current_time),3)
                     iteration += 1
