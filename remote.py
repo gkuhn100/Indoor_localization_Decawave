@@ -14,7 +14,8 @@ dT = 0  ## time elapsed between tag_apg
 delta_X = 0.5 ##Uncertainty in X_position
 delta_Y = 0.5 ##Uncertainty in Y_position
 init = False ## variable that is initliazed once the print_anchor has been called
-iteration = 0
+iteration = 0 ## Variable used to count the total number of iterations run
+LOS = False 
 
 ## Matrices used in the Kalman Filter
 A = np.array([[1,0],[0,1]]) # matrix for converting state model matrix
@@ -113,20 +114,30 @@ def predict_state(X_est, Accel):
 
 ## Function to predict the state of the tag based on its previous state estimate and accelera
 def predict_cov(Pc):
-    Pc = np.dot(A,Pc)
-    Pc = np.dot(Pc,At) + Q
-    Pc[0][1] = 0.0
-    Pc[1][0] = 0.0
+    global LOS
+    if LOS == True:
+        Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
+        LOS = False
+    else:
+        Pc = np.dot(A,Pc)
+        Pc = np.dot(Pc,At) + Q
+        Pc[0][1] = 0.0
+        Pc[1][0] = 0.0
     return(Pc)
 
 ## Function to calculate the Kalman Gain
 def Kalman_Gain(X_est,Pc):
-    Kg_num = np.dot(Pc,H)
-    Kg_den = np.dot(H,Pc)
-    Kg_den = np.dot(Kg_den,H) + R
-    Kg     = np.divide(Kg_num,Kg_den)
-    Kg[0][1] = 0.0
-    Kg[1][0] = 0.0
+    global LOS
+    if LOS == True:
+        Kg = np.array([[.833,0.0],[0.0,.833]])
+        LOS = False
+    else:  
+        Kg_num = np.dot(Pc,H)
+        Kg_den = np.dot(H,Pc)
+        Kg_den = np.dot(Kg_den,H) + R
+        Kg     = np.divide(Kg_num,Kg_den)
+        Kg[0][1] = 0.0
+        Kg[1][0] = 0.0
     return(Kg)
 
 ##Function to update the state estimate; taking in account predicted, measured states and acceleration
@@ -146,7 +157,9 @@ def update_PC(Pc,Kg):
 
 ##Function which runs if and only if an anchor node malfunctions
 def missing_anchor(tag_pos,kg,accel):
-    print('eh')
+    print('Anchor node has malfunctined')
+    ## Determine missing Anchor
+    ## Determine distance from 
 
 
 if __name__ == "__main__":
@@ -174,30 +187,31 @@ if __name__ == "__main__":
                     current_time = time.time()
                     if iteration == 0:
                         qf = sort_qf(tag_apg)
-                       tag_loc = sort_apg(tag_apg)
-                       X_est = tag_loc
-                       print(f"At iteration {iteration} and time {time_now} the observed tag position is {tag_loc} ")
+                        tag_loc = sort_apg(tag_apg)
+                        X_est = tag_loc
+                        print(f"At iteration {iteration} and time {time_now} the observed tag position is {tag_loc} ")
                     else:
-                         X_est = predict_state(X_est,accel)
-                         predict = X_est
-                         qf = sort_qf(tag_apg)
+                         qf = int(sort_qf(tag_apg))
                          if (qf > 0 ):
+                             X_est = predict_state(X_est,accel)
+                             predict = X_est
                              tag_loc= sort_apg(tag_apg)
                              Kg = Kalman_Gain(X_est,Pc)
-                             X_est = update_state(X_est,tag_loc,Kg)
+                             X_est = update_state(X_est,tag_loc,Kg) 
                              Pc = update_PC(Pc,Kg)
                              print(f"The quality factor is {qf}")
                              print(f"At iteration {iteration} and time {time_now} the predicted state is {predict} and is accelerating at {accel} m/s^2 ")
                              print(f"The observed state is {tag_loc}")
                              print(f"The Kalman Gain is {Kg}")
                              print(f"The updated state is therefore {X_est} ")
-                             ##print(f"The process covariance matrix is {Pc}")
-                        elif q == 0:
+                             print(f"The process covariance matrix is {Pc}")
+                         elif qf == 0:
+                            LOS = True
                             X_est = predict_state(X_est,accel)
-                            tag_loc = X_est
-                            print(f"Warining the tag node is currently out of the LOS! The estimated position is {tag_loc}")
-                        elif num_anchor > current_anchor:
-
+                            print(f"Warining the tag node is currently out of the LOS! The estimated position is {X_est} and is accelerating at {accel}m/s^2")
+                         #elif num_anchor > current_anchor:
+                             #missing_anchor(tag_loc,Kg,accel)
+                             
                     time.sleep(1)
                     dT = round((time.time() - current_time),3)
                     iteration += 1
