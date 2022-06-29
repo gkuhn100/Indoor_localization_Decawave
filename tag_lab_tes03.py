@@ -6,7 +6,6 @@ results with K-filters
 @author: Gregk
 """
 
-
 """Importing modules and libraries """
 import serial
 import time
@@ -14,7 +13,7 @@ import datetime
 import numpy as np
 import multiprocessing as mp
 
-""" Below are the arrays that will be useful for Kalman Filter"""
+""" Below are the arrays that will be used for Kalman Filtering"""
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
 At= np.transpose(A)
 B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
@@ -36,13 +35,13 @@ if ser.isOpen():
     time.sleep(1)
     line = ser.write("\r\r".encode())
     time.sleep(1)
-  
+
 """ the function below is used  to print the position of the tag nodes"""
 def print_tag_loc():
     ser.write('lec\r'.encode())
     line = ser.readline()
     return(line)
-    
+
     if __name__ == "__main__":
-        tag_postion = 
-    
+        tag_postion = print_tag_loc()
+        ###
