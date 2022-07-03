@@ -33,15 +33,17 @@ C = np.array([[1,0],[0,1]]) #Measurement to Observation matrix
 """ Setting Global Variables """
 dT   = 0  # Variable to measure the time elapsed between tag detections
 count = 0 # Variable that increases when tag is succesfull detected
-iter  = 0 # How many times the code runs
-init  = False ## Variable that is used to initialize the code; true after it has been detected at three consecutive times
-stat  = False ## Variable to determine if tag is stationary
-NLOS   = False ## vriable to check if tag is in NLOS or not
+iterat  = 0 # How many times the code runs
+init  = False # Variable that is used to initialize the code; true after it has been detected at three consecutive times
+stat  = False # Variable to determine if tag is stationary
+NLOS   = False # Variable to check if tag is in NLOS or not
+delta_X = .5 # Initial Uncertaintity for x position
+delta_Y = .5 # Initial Uncertaintity for y position
 
 """ Establish a serial coonection between tag and Pi """
 baudrate = 115200
-port1 = "/dev/ttyAMA0"
-tag1 = serial.Serial(port1, baudrate, timeout = 1) ##tag_apg
+port1 = "/dev/ttyACM0"
+ser = serial.Serial(port1, baudrate, timeout = 1)
 time.sleep(1)
 
 if ser.isOpen():
@@ -50,17 +52,18 @@ if ser.isOpen():
     line = ser.write("\r\r".encode())
     time.sleep(1)
 
+
  #Returns acceleration of tag
 def get_accel():
     Accel = sense.get_accelerometer_raw()
-    X = accel['x']
-    Y = accel['y']
+    X = Accel['x']
+    Y = Accel['y']
     Accel_list = [X,Y]
     return(Accel_list)
 
 ## return the position of the tag node
-def print_tag_loc():
-    ser.write('apg\r'.encode())
+def print_tag_pos():
+    ser.write("apg\r".encode())
     line = ser.readline()
     return(line)
 
@@ -140,26 +143,10 @@ if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        tag_pos = print_tag_loc()
-        tag_loc = tag_decode(tag_pos)
-        if count == 3 and init == False:
-            X_est = tag_loc
-            init = True
-            try:
-                current_time = time.time()
-                qf = int(sort_qf)
-                if qf > 0 and (tag_loc != None):
-                    X_est   = predict_state(X_est,tag_loc,Kg)
-                    predict = X_est
-                    tag_loc = tag_decode()
-                    Kg = Kalman_Gain(X_est,Pc)
-                    X_est = update_state(X_est,tag_loc,Kg)
-                elif qf == 0:
-                    NLOS = True
-                    X_est = predict_state(X_est,accel)
-    time.sleep(1)
-        dT = round((time.time() - current_time),3)
-        iteration += 1
-            except KeyboardInterrupt:
-            print("Error! keybord interrupt detected, now cNLOSing the ports")
-            tag1.cNLOSe()
+        pos = ser.readline()
+        print(pos)
+        ##tag_pos = print_tag_pos()
+        ##print(f"At time {time_now} the tag is acclerating at {accel}m/s^2 and at location {tag_pos} ")
+    
+        ##dT = round((time.time() - current_time),3)
+        iterat+=1
