@@ -20,18 +20,25 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 """ Below are the arrays that will be used for Kalman Filtering"""
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
-At= np.transpose(A)
+At= np.transpose(A) # Transpose of matrix A
 B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
 W = np.array([[.05],[0.025]])# Predict State error matrix
 Q = np.array([[.000212],[.04]]) #Error in the Predict State Matrix
 R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
 Pc = np.array([[.05,0.0],[0.0,.05]])#Process Uncertainty Matrix
 I = np.array([[1,0],[0,1]]) # Identity Matrix
-H = np.array([[1,0],[0,1]]) ##Kalman Gain Conversion Matrix
-C = np.array([[1,0],[0,1]]) ##Measurement to Observation matrix
+H = np.array([[1,0],[0,1]]) #Kalman Gain Conversion Matrix
+C = np.array([[1,0],[0,1]]) #Measurement to Observation matrix
 
+""" Setting Global Variables """
+dT   = 0  # Variable to measure the time elapsed between tag detections
+count = 0 # Variable that increases when tag is succesfull detected
+iter  = 0 # How many times the code runs
+init  = False ## Variable that is used to initialize the code; true after it has been detected at three consecutive times
+stat  = False ## Variable to determine if tag is stationary
+NLOS   = False ## vriable to check if tag is in NLOS or not
 
-## Establish a serial coonection
+""" Establish a serial coonection between tag and Pi """
 baudrate = 115200
 port1 = "/dev/ttyAMA0"
 tag1 = serial.Serial(port1, baudrate, timeout = 1) ##tag_apg
@@ -59,10 +66,18 @@ def print_tag_loc():
 
 ## return the position of the tag node
 def tag_decode(line):
+    global count
     Line = line.split()
+    Line = Line.decode('ascii')
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
+    tag_loc  = [X_pos, Y_pos]
+    if len(Line) > 10 and Line.find('tag') != -1:
+        return tag_loc
+        count +=1
+    else:
+        return None
 
 ##Function to return the quality factor
 def sort_qf(line):
@@ -80,10 +95,10 @@ def predict_state(X_est, Accel):
 
 ## Function to predict the state of the tag based on its previous state estimate and accelera
 def predict_cov(Pc):
-    global LOS
-    if LOS == True:
+    global NLOS
+    if NLOS == True:
         Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
-        LOS = False
+        NLOS = False
     else:
         Pc = np.dot(A,Pc)
         Pc = np.dot(Pc,At) + Q
@@ -93,10 +108,10 @@ def predict_cov(Pc):
 
 ## Function to calculate the Kalman Gain
 def Kalman_Gain(X_est,Pc):
-    global LOS
-    if LOS == True:
+    global NLOS
+    if NLOS == True:
         Kg = np.array([[.833,0.0],[0.0,.833]])
-        LOS = False
+        NLOS = False
     else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
@@ -125,16 +140,26 @@ if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        tag_apg = print_tag_loc()
-        tag_loc = tag_decode(tag_apg)
-        if tag_loc is not empty:
-            count +=1
-        if count == 3:
+        tag_pos = print_tag_loc()
+        tag_loc = tag_decode(tag_pos)
+        if count == 3 and init == False:
+            X_est = tag_loc
             init = True
-        if init == True:
             try:
-
+                current_time = time.time()
+                qf = int(sort_qf)
+                if qf > 0 and (tag_loc != None):
+                    X_est   = predict_state(X_est,tag_loc,Kg)
+                    predict = X_est
+                    tag_loc = tag_decode()
+                    Kg = Kalman_Gain(X_est,Pc)
+                    X_est = update_state(X_est,tag_loc,Kg)
+                elif qf == 0:
+                    NLOS = True
+                    X_est = predict_state(X_est,accel)
+    time.sleep(1)
+        dT = round((time.time() - current_time),3)
+        iteration += 1
             except KeyboardInterrupt:
-            print("Error! keybord interrupt detected, now closing the ports")
-            tag1.close()
-        time.sleep(1)
+            print("Error! keybord interrupt detected, now cNLOSing the ports")
+            tag1.cNLOSe()
