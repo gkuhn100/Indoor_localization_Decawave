@@ -63,24 +63,28 @@ def get_accel():
 
 ## return the position of the tag node
 def print_tag_pos():
+    global count
+    global init
     ser.write("apg\r".encode())
     line = ser.readline()
-    return(line)
+    if len(line.decode('ascii')) > 20:
+        count +=1
+    if count == 3:
+        init = True
+    return line
+    
 
 ## return the position of the tag node
 def tag_decode(line):
-    global count
-    Line = line.split()
-    Line = Line.decode('ascii')
-    Line = Line[1:]
-    X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
-    Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
-    tag_loc  = [X_pos, Y_pos]
-    if len(Line) > 10 and Line.find('tag') != -1:
+    global iterat
+    if len(line) > 10:
+        Line = line.split()
+        Line = Line[1:]
+        X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
+        Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
+        tag_loc  = [X_pos, Y_pos]
+        iterat +=1
         return tag_loc
-        count +=1
-    else:
-        return None
 
 ##Function to return the quality factor
 def sort_qf(line):
@@ -128,7 +132,6 @@ def Kalman_Gain(X_est,Pc):
 def update_state(X_est,tag_apg,Kg):
     num = tag_apg - np.dot(H,X_est)
     X_est = X_est + np.dot(Kg,num)
-    print()
     return(X_est)
 
 ##Function to update the process covariance matrix
@@ -143,10 +146,27 @@ if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        pos = ser.readline()
-        print(pos)
-        ##tag_pos = print_tag_pos()
-        ##print(f"At time {time_now} the tag is acclerating at {accel}m/s^2 and at location {tag_pos} ")
+        tag_pos = print_tag_pos()
+        tag_pos = tag_pos.decode('ascii')
+        if init == True:
+            try:
+                if tag_pos != None and len(tag_pos) > 10:
+                    tag_loc = tag_decode(tag_pos)
+                    dT = round((time.time() - current_time),3) * 2
+                    if iterat == 0:
+                        qf = sort_qf(tag_pos)
+                        X_est = tag_loc
+                        print(f"At iteration {iterat} and time {time_now} the tag is at observed position {tag_loc}")
+                    else:
+                        qf = int(sort_qf(tag_pos))
+                        if qf > 0:
+                            X_est = predict_state(X_est,accel)
+                            preid
+                        
+            except KeyboardInterrupt:
+                print("Error! keybord interrupt detected, now closing the ports")
+                ser.close()
+        current_time = time.time()
+        time.sleep(.5)
+        
     
-        ##dT = round((time.time() - current_time),3)
-        iterat+=1
