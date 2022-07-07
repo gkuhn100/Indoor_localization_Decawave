@@ -52,8 +52,7 @@ if ser.isOpen():
     line = ser.write("\r\r".encode())
     time.sleep(1)
 
-
- #Returns acceleration of tag
+""" Returns acceleration of tag node in X, Y coordiante in M/S^2 """
 def get_accel():
     Accel = sense.get_accelerometer_raw()
     X = Accel['x']
@@ -61,7 +60,7 @@ def get_accel():
     Accel_list = [X,Y]
     return(Accel_list)
 
-## return the position of the tag node
+""" """
 def print_tag_pos():
     global count
     global init
@@ -72,7 +71,6 @@ def print_tag_pos():
     if count == 3:
         init = True
     return line
-    
 
 ## return the position of the tag node
 def tag_decode(line):
@@ -146,27 +144,30 @@ if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        tag_pos = print_tag_pos()
-        tag_pos = tag_pos.decode('ascii')
+        tag_pos = print_tag_pos() ## tag_pos (raw) after apg command has been entered
+        tag_pos = tag_pos.decode('ascii') ## Decoded apg' value, just x/y coordinate loc
         if init == True:
             try:
                 if tag_pos != None and len(tag_pos) > 10:
                     tag_loc = tag_decode(tag_pos)
                     dT = round((time.time() - current_time),3) * 2
-                    if iterat == 0:
+                    if iterat == 0 and (qf !=0):
                         qf = sort_qf(tag_pos)
                         X_est = tag_loc
                         print(f"At iteration {iterat} and time {time_now} the tag is at observed position {tag_loc}")
-                    else:
+                    elif qf !=0 and iterat>0:
                         qf = int(sort_qf(tag_pos))
                         if qf > 0:
                             X_est = predict_state(X_est,accel)
-                            preid
-                        
+                            Kg   = Kalman_Gain(X_est,Pc)
+                            X_est = predict_state(X_est,tag_loc,Pc)
+                            Pc   = update_pc
+                        else:
+                            NLOS = True
+                            X_est = predict_state(X_est,accel)
+
             except KeyboardInterrupt:
                 print("Error! keybord interrupt detected, now closing the ports")
                 ser.close()
         current_time = time.time()
         time.sleep(.5)
-        
-    
