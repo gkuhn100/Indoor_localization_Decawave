@@ -1,14 +1,14 @@
 """
 Created on Sun Jun 26 16:59:03 2022
 
-This file is used to test ability of  only one Decawave's tag's position to be
-tracked and predicted with a kalman filter. Connect to the tag pi is a piHat
-and one Decawave Tag
+This file is used to test ability of only one serially connected Decawave tag's
+position to be tracked and predicted with a kalman filter.
+Connect to the tag pi is a piHat and one Decawave Tag
 
 @author: gkuhn
 """
 
-"""Importing modules and libraries """
+""" Importing modules and libraries """
 import serial
 import time
 import datetime
@@ -40,7 +40,7 @@ delta_X = .5 # Initial Uncertaintity for x position
 delta_Y = .5 # Initial Uncertaintity for y position
 G = 9.8065 # Converting Gforce to m/s^2
 
-""" Establish a serial coonection between tag and Pi """
+""" Establish a serial connection between tag and Pi """
 baudrate = 115200
 port1 = "/dev/ttyACM0"
 ser = serial.Serial(port1, baudrate, timeout = 1)
@@ -52,7 +52,7 @@ if ser.isOpen():
     line = ser.write("\r\r".encode())
     time.sleep(1)
 
-""" Returns acceleration of tag node in X, Y coordiante in M/S^2 """
+""" Returns acceleration of tag node in X, Y coordinate in M/S^2 """
 def get_accel():
     Accel = sense.get_accelerometer_raw()
     X = round(Accel['x'] * G,3)
@@ -61,7 +61,13 @@ def get_accel():
     Accel_list = [X,Y]
     return(Accel_list)
 
-""" """
+# f/n print_tag_pos()
+""" This function enters the command apg in the tag node and returns
+the decoded value of the line provided the length of the returned values
+is greater than 20. If three successful tags have been detected then the global variable
+init is set to true
+ """
+# return line (decoded into ascii values)
 def print_tag_pos():
     global count
     global init
@@ -73,7 +79,14 @@ def print_tag_pos():
             init = True
         return line.decode('ascii')
 
-## return the position of the tag node
+# f/n tag_decode(line)
+"""
+only if the length is greater than 20
+returns the observed,parsed,adjusted position of the tag node
+Additionally iterates the iterat variable everytime it is run
+"""
+# input line
+# return tag_loc
 def tag_decode(line):
     global init
     global iterat
@@ -85,8 +98,14 @@ def tag_decode(line):
     if init == True:
         iterat +=1
     return tag_loc
-    
-##Function to return the quality factor
+
+# f/n sort_qf(line)
+"""
+only if the length is greater than 20
+returns the qualitfy factor, qf
+"""
+# input line
+# return qf
 def sort_qf(line):
     if len(line) > 20:
         Line = line.split(" ")
@@ -94,14 +113,27 @@ def sort_qf(line):
         Qf =    (Line[3].strip('qf:'))
         return(Qf)
 
-## Function to predict the state of the tag based on its previous state estimate and acceleration
+# f/n predict_state(X_est,Accel)
+"""
+Predicts the state of the tag based on previous positon and acceleration
+If it is the first time running the code then inital position estimate is the
+observed tag_loc
+"""
+# input X_est, Accel
+# return X_est
 def predict_state(X_est, Accel):
     global dT
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
 
-## Function to predict the state of the tag based on its previous state estimate and accelera
+# f/n predict_cov(Pc)
+"""
+Predicts the process covaraince matrix
+Remember initial Process covariance is decided beforehand and listed above
+"""
+# input Pc
+# return Pc
 def predict_cov(Pc):
     global NLOS
     if NLOS == True:
@@ -114,7 +146,12 @@ def predict_cov(Pc):
         Pc[1][0] = 0.0
     return(Pc)
 
-## Function to calculate the Kalman Gain
+# f/n kalman_gain(X_est,Pc)
+"""
+Adjust the Kalman Gain
+"""
+# input X_est,Pc
+# return Kg
 def kalman_gain(X_est,Pc):
     global NLOS
     if NLOS == True:
@@ -129,13 +166,24 @@ def kalman_gain(X_est,Pc):
         Kg[1][0] = 0.0
     return(Kg)
 
-##Function to update the state estimate; taking in account predicted, measured states and acceleration
+# f/n update_state(X_est,tag_apg,Kg)
+"""
+Update the estimated state of the tag based on predicted state, observed state and
+Kalman Gain. Note remeber the difference between predicted and observed state
+"""
+# input X_est,tag_apg,Kg
+# return X_est
 def update_state(X_est,tag_apg,Kg):
     num = tag_apg - np.dot(H,X_est)
     X_est = X_est + np.dot(Kg,num)
     return(X_est)
 
-##Function to update the process covariance matrix
+# f/n uodate_Pc(Pc,Kg)
+"""
+Updates the Process covariance matrix prior to process beginning anew
+"""
+# input Pc, Kg
+# return Pc
 def update_PC(Pc,Kg):
     num = I- (np.dot(Kg,H))
     Pc = np.dot(num,Pc)
