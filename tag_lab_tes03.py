@@ -65,7 +65,7 @@ def get_accel():
 """ This function enters the command apg in the tag node and returns
 the decoded value of the line provided the length of the returned values
 is greater than 20. If three successful tags have been detected then the global variable
-init is set to true
+init is set to True
  """
 # return line (decoded into ascii values)
 def print_tag_pos():
@@ -90,6 +90,8 @@ Additionally iterates the iterat variable everytime it is run
 def tag_decode(line):
     global init
     global iterat
+    global current_time
+    current_time = time.time()
     Line = line.split()
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
@@ -138,7 +140,7 @@ def predict_cov(Pc):
     global NLOS
     if NLOS == True:
         Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
-        NLOS = False
+        ##NLOS = False
     else:
         Pc = np.dot(A,Pc)
         Pc = np.dot(Pc,At) + Q
@@ -156,7 +158,7 @@ def kalman_gain(X_est,Pc):
     global NLOS
     if NLOS == True:
         Kg = np.array([[.833,0.0],[0.0,.833]])
-        NLOS = False
+        ##NLOS = False
     else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
@@ -195,15 +197,15 @@ if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        tag_pos = print_tag_pos()
+        tag_pos = print_tag_pos() ## The tag position identically observed by Decawave
         try:
-            current_time = time.time()
-            if tag_pos is not None:
-                tag_loc = tag_decode(tag_pos)
+            if tag_pos is not None: ## Check to ensure command 'apg' returns a valid ouput
+                tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 qf      = sort_qf(tag_pos)
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2")
-                if iterat == 1:
+                if iterat == 1:## Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
+                    ## Add line for initial update PC
                     print(f"The estimated position is {X_est}")
                 elif iterat>1:
                     X_est = predict_state(X_est,accel)
@@ -217,5 +219,5 @@ if __name__ == "__main__":
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
         time.sleep(.5)
-        dT = round((time.time() - current_time),3) * 2
-        ##print(dT)
+        dT = round((time.time() - current_time),3)
+        print(dT)
