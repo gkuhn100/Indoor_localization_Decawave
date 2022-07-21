@@ -129,8 +129,18 @@ def predict_state(X_est, Accel):
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
 
-# f/n predict_cov(Pc)
 """
+For the first iteration of the process covariance matrix
+only used for the first iteratin
+"""
+# f/n init_cov()
+# return Pc
+def init_cov():
+    Pc=np.array([[(Pc[0][0]*Pc[0]Pc[1])],[0,(Pc[1][1]*Pc[1][1])],dtype=float)
+    return Pc
+
+# f/n predict_cov(Pc)
+""""
 Predicts the process covaraince matrix
 Remember initial Process covariance is decided beforehand and listed above
 """
@@ -149,9 +159,9 @@ def predict_cov(Pc):
     return(Pc)
 
 # f/n kalman_gain(X_est,Pc)
-"""
+""""
 Adjust the Kalman Gain
-"""
+""""
 # input X_est,Pc
 # return Kg
 def kalman_gain(X_est,Pc):
@@ -169,7 +179,7 @@ def kalman_gain(X_est,Pc):
     return(Kg)
 
 # f/n update_state(X_est,tag_apg,Kg)
-"""
+""""
 Update the estimated state of the tag based on predicted state, observed state and
 Kalman Gain. Note remeber the difference between predicted and observed state
 """
@@ -181,7 +191,7 @@ def update_state(X_est,tag_apg,Kg):
     return(X_est)
 
 # f/n uodate_Pc(Pc,Kg)
-"""
+""""
 Updates the Process covariance matrix prior to process beginning anew
 """
 # input Pc, Kg
@@ -205,7 +215,7 @@ if __name__ == "__main__":
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2")
                 if iterat == 1:## Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
-                    ## Add line for initial update PC
+                    Pc = init_cov()
                     print(f"The estimated position is {X_est}")
                 elif iterat>1:
                     X_est = predict_state(X_est,accel)
