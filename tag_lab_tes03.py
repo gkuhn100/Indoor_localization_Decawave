@@ -131,7 +131,6 @@ def predict_state(X_est, Accel):
 
 """
 For the first iteration of the process covariance matrix
-only used for the first iteratin
 """
 # f/n init_cov()
 # return Pc
