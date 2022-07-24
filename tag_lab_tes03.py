@@ -39,10 +39,11 @@ NLOS   = False # Variable to check if tag is in NLOS or not
 delta_X = .5 # Initial Uncertaintity for x position
 delta_Y = .5 # Initial Uncertaintity for y position
 G = 9.8065 # Converting Gforce to m/s^2
+tag_loc_list = []# list to contain all the observed tag_loc; useful in determining if tag is stationary
 
 """ Establish a serial connection between tag and Pi """
 baudrate = 115200
-port1 = "/dev/ttyACM0"
+port1 = "/dev/ttyACM1"
 ser = serial.Serial(port1, baudrate, timeout = 1)
 time.sleep(1)
 
@@ -57,11 +58,10 @@ def get_accel():
     Accel = sense.get_accelerometer_raw()
     X = round(Accel['x'] * G,3)
     Y = round(Accel['y'] * G,3)
-    ##Z = Accel['z'] * G
     Accel_list = [X,Y]
     return(Accel_list)
     
-""" Retuns the orientation of X,Y coordinates in radians"""    
+""" Retuns the orientation of X,Y coordinates in radians/s"""    
 def get_gyro():
     gyro = sense.get_gyroscope_raw()
     X = round(gyro['x'], 5)
@@ -80,6 +80,7 @@ init is set to True
 def print_tag_pos():
     global count
     global init
+    global Qf
     ser.write("apg\r".encode())
     line = ser.readline()
     line = line.decode('utf-8')
@@ -100,12 +101,14 @@ Additionally iterates the iterat variable everytime it is run
 def tag_decode(line):
     global init
     global iterat
+    global Qf
+    
     Line = line.split()
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
     tag_loc  = [X_pos, Y_pos]
-    if init == True:
+    if init == True and Qf > 0:
         iterat +=1
     return tag_loc
 
@@ -117,11 +120,11 @@ returns the qualitfy factor, qf
 # input line
 # return qf
 def sort_qf(line):
+    global Qf
     Line = line.split(" ")
     Line = Line[1:]
-    Qf =    (Line[3].strip('qf:'))
-    return(Qf)
-
+    Qf =    int((Line[3].strip('qf:')))
+      
 # f/n predict_state(X_est,Accel)
 """
 Predicts the state of the tag based on previous positon and acceleration
@@ -215,7 +218,12 @@ def update_PC(Pc,Kg):
 # f/n det_stat(tag_loc,Accel)
 """deterimines if the tag is stationary or not """
 def det_stat(tag_loc,Accel):
-    print('sick m')
+    global tac_loc_list
+    global iterat
+    tag_loc_list.append(tag_loc)
+    length = len(tag_loc_list)
+    if iterat >= 0 and length>1:
+        print(tag_loc_list)
 
 if __name__ == "__main__":
     while True:
@@ -225,30 +233,28 @@ if __name__ == "__main__":
         try:
             if tag_pos is not None: ## Check to ensure command 'apg' returns a valid ouput
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
-                qf      = sort_qf(tag_pos)
-                #print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2")
-                if iterat == 0:
+                sort_qf(tag_pos)
+                ##det_stat(tag_loc,accel)
+                print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
+                if iterat == 0 and Qf > 0:
                     delta_t = [time.time()]
                 elif iterat == 1:## Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
                     Pc = init_cov()
-                    print(f"The estimated position is {X_est}")
                     delta_t.append(time.time())
-                    dT= delta_t[iterat-1] - delta_t[iterat - 2]
-                    print(delta_t)
+                    dT= round(delta_t[1] - delta_t[0],4)
+                    print(f"At iteration {iterat} The estimated position is {X_est} with a delta_T of {dT}")
                 elif iterat>1:
                     delta_t.append(time.time())
-                    dT= delta_t[iterat-1] - delta_t[iterat - 2]
-                    print(dT)
+                    dT= round(delta_t[iterat-1] - delta_t[iterat - 2],4)
                     X_est = predict_state(X_est,accel)
                     Pc = predict_cov(Pc)
-                    #print(f"The predicted position is {X_est} with a process covariance of {Pc}")
+                    print(f"At Iteration {iterat} The predicted position is {X_est} with a process covariance of {Pc}")
                     Kg = kalman_gain(X_est,Pc)
                     X_est = update_state(X_est,tag_loc,Kg)
                     Pc = update_PC(Pc,Kg)
-                    #print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc}")
+                    print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
         except KeyboardInterrupt:
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
         time.sleep(.5)
-
