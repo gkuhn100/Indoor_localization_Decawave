@@ -30,7 +30,7 @@ H = np.array([[1,0],[0,1]]) #Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) #Measurement to Observation matrix
 
 """ Setting Global Variables """
-dT   = 0  # Variable to measure the time elapsed between tag detections
+dT   =  0 # Variable to measure the time elapsed between tag detections
 count = 0 # Variable that increases when tag is succesfull detected
 iterat  = 0 # How many times the code runs
 init  = False # Variable that is used to initialize the code; true after it has been detected at three consecutive times
@@ -60,7 +60,16 @@ def get_accel():
     ##Z = Accel['z'] * G
     Accel_list = [X,Y]
     return(Accel_list)
+    
+""" Retuns the orientation of X,Y coordinates in radians"""    
+def get_gyro():
+    gyro = sense.get_gyroscope_raw()
+    X = round(gyro['x'], 5)
+    Y = round(gyro['y'], 5)
+    gyro_list = [X,Y]
+    return gyro_list
 
+    
 # f/n print_tag_pos()
 """ This function enters the command apg in the tag node and returns
 the decoded value of the line provided the length of the returned values
@@ -73,11 +82,12 @@ def print_tag_pos():
     global init
     ser.write("apg\r".encode())
     line = ser.readline()
-    if len(line.decode('ascii')) > 20:
+    line = line.decode('utf-8')
+    if len(line) > 20 and (line.find("x") !=-1) and line.find("y"):
         count +=1
         if count == 3:
             init = True
-        return line.decode('ascii')
+        return line
 
 # f/n tag_decode(line)
 """
@@ -90,8 +100,6 @@ Additionally iterates the iterat variable everytime it is run
 def tag_decode(line):
     global init
     global iterat
-    global current_time
-    current_time = time.time()
     Line = line.split()
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
@@ -109,11 +117,10 @@ returns the qualitfy factor, qf
 # input line
 # return qf
 def sort_qf(line):
-    if len(line) > 20:
-        Line = line.split(" ")
-        Line = Line[1:]
-        Qf =    (Line[3].strip('qf:'))
-        return(Qf)
+    Line = line.split(" ")
+    Line = Line[1:]
+    Qf =    (Line[3].strip('qf:'))
+    return(Qf)
 
 # f/n predict_state(X_est,Accel)
 """
@@ -135,7 +142,10 @@ For the first iteration of the process covariance matrix
 # f/n init_cov()
 # return Pc
 def init_cov():
-    Pc=np.array([[(Pc[0][0]*Pc[0]Pc[1])],[0,(Pc[1][1]*Pc[1][1])],dtype=float)
+    global Pc
+    Pc_0 = Pc[0][0] * Pc[0][0]
+    Pc_1 = Pc[1][1] * Pc[1][1]
+    Pc = np.array([[Pc_0,0],[0,Pc_1]])
     return Pc
 
 # f/n predict_cov(Pc)
@@ -160,7 +170,7 @@ def predict_cov(Pc):
 # f/n kalman_gain(X_est,Pc)
 """"
 Adjust the Kalman Gain
-""""
+"""
 # input X_est,Pc
 # return Kg
 def kalman_gain(X_est,Pc):
@@ -189,7 +199,7 @@ def update_state(X_est,tag_apg,Kg):
     X_est = X_est + np.dot(Kg,num)
     return(X_est)
 
-# f/n uodate_Pc(Pc,Kg)
+# f/n update_Pc(Pc,Kg)
 """"
 Updates the Process covariance matrix prior to process beginning anew
 """
@@ -201,6 +211,11 @@ def update_PC(Pc,Kg):
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
+    
+# f/n det_stat(tag_loc,Accel)
+"""deterimines if the tag is stationary or not """
+def det_stat(tag_loc,Accel):
+    print('sick m')
 
 if __name__ == "__main__":
     while True:
@@ -211,22 +226,29 @@ if __name__ == "__main__":
             if tag_pos is not None: ## Check to ensure command 'apg' returns a valid ouput
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 qf      = sort_qf(tag_pos)
-                print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2")
-                if iterat == 1:## Used to set the initial tag_location
+                #print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2")
+                if iterat == 0:
+                    delta_t = [time.time()]
+                elif iterat == 1:## Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
                     Pc = init_cov()
                     print(f"The estimated position is {X_est}")
+                    delta_t.append(time.time())
+                    dT= delta_t[iterat-1] - delta_t[iterat - 2]
+                    print(delta_t)
                 elif iterat>1:
+                    delta_t.append(time.time())
+                    dT= delta_t[iterat-1] - delta_t[iterat - 2]
+                    print(dT)
                     X_est = predict_state(X_est,accel)
                     Pc = predict_cov(Pc)
-                    print(f"The predicted position is {X_est} with a process covariance of {Pc}")
+                    #print(f"The predicted position is {X_est} with a process covariance of {Pc}")
                     Kg = kalman_gain(X_est,Pc)
                     X_est = update_state(X_est,tag_loc,Kg)
                     Pc = update_PC(Pc,Kg)
-                    print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc}")
+                    #print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc}")
         except KeyboardInterrupt:
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
         time.sleep(.5)
-        dT = round((time.time() - current_time),3)
-        print(dT)
+
