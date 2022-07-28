@@ -69,7 +69,7 @@ def get_gyro():
     gyro_list = [X,Y]
     return gyro_list
 
-# f/n print_tag_pos()
+# f/n print_tag_pos()]
 """ This function enters the command apg in the tag node and returns
 the decoded value of the line provided the length of the returned values
 is greater than 20. If three successful tags have been detected then the global variable
@@ -125,6 +125,8 @@ def sort_qf(line):
     Qf = int((Line[3].strip('qf:')))
     if Qf == 0:
         NLOS = True
+    else:
+        NLOS = False
     return Qf
 # f/n predict_state(X_est,Accel)
 """
@@ -136,6 +138,8 @@ observed tag_loc
 # return X_est
 def predict_state(X_est, Accel):
     global dT
+    global NLOS
+
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
@@ -161,9 +165,8 @@ Remember initial Process covariance is decided beforehand and listed above
 # return Pc
 def predict_cov(Pc):
     global NLOS
-    if NLOS == True:
+    if NLOS == True: ## if tag passes out of LOS this code will reset the Pc to original value
         Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
-        ##NLOS = False
     else:
         Pc = np.dot(A,Pc)
         Pc = np.dot(Pc,At) + Q
@@ -179,9 +182,8 @@ Adjust the Kalman Gain
 # return Kg
 def kalman_gain(X_est,Pc):
     global NLOS
-    if NLOS == True:
+    if NLOS == True: # if tag passes out of LOS Reset Kalman Gain to original value
         Kg = np.array([[.833,0.0],[0.0,.833]])
-        ##NLOS = False
     else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
@@ -199,8 +201,12 @@ Kalman Gain. Note remeber the difference between predicted and observed state
 # input X_est,tag_apg,Kg
 # return X_est
 def update_state(X_est,tag_apg,Kg):
-    num = tag_apg - np.dot(H,X_est)
-    X_est = X_est + np.dot(Kg,num)
+    global NLOS
+    if NLOS == True: #if tag passes out of LOS make sure that the updated state value is merely the predictied state
+        X_est = X_est
+    else:
+        num = tag_apg - np.dot(H,X_est)
+        X_est = X_est + np.dot(Kg,num)
     return(X_est)
 
 # f/n update_Pc(Pc,Kg)
