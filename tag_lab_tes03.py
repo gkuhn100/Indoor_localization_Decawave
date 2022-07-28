@@ -184,6 +184,7 @@ def kalman_gain(X_est,Pc):
     global NLOS
     if NLOS == True: # if tag passes out of LOS Reset Kalman Gain to original value
         Kg = np.array([[.833,0.0],[0.0,.833]])
+        Kg_temp = np.array([[0.0,0.0],[0.0,0.0]])
     else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
@@ -191,7 +192,7 @@ def kalman_gain(X_est,Pc):
         Kg     = np.divide(Kg_num,Kg_den)
         Kg[0][1] = 0.0
         Kg[1][0] = 0.0
-    return(Kg)
+        return(Kg)
 
 # f/n update_state(X_est,tag_apg,Kg)
 """"
@@ -202,11 +203,8 @@ Kalman Gain. Note remeber the difference between predicted and observed state
 # return X_est
 def update_state(X_est,tag_apg,Kg):
     global NLOS
-    if NLOS == True: #if tag passes out of LOS make sure that the updated state value is merely the predictied state
-        X_est = X_est
-    else:
-        num = tag_apg - np.dot(H,X_est)
-        X_est = X_est + np.dot(Kg,num)
+    num = tag_apg - np.dot(H,X_est)
+    X_est = X_est + np.dot(Kg,num)
     return(X_est)
 
 # f/n update_Pc(Pc,Kg)
@@ -242,8 +240,8 @@ if __name__ == "__main__":
         tag_pos = print_tag_pos() # The tag position identically observed by Decawave
         try:
             if tag_pos is not None: # Check to ensure command 'apg' returns a valid ouput
+                qf = sort_qf(tag_pos) # gets quality factor
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
-                qf = sort_qf(tag_pos)
                 det_stat(tag_loc,accel)
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
                 if iterat == 0 and qf > 0:
