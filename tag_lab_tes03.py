@@ -60,8 +60,8 @@ def get_accel():
     Y = round(Accel['y'] * G,3)
     Accel_list = [X,Y]
     return(Accel_list)
-    
-""" Retuns the orientation of X,Y coordinates in radians/s"""    
+
+""" Retuns the orientation of X,Y coordinates in radians/s"""
 def get_gyro():
     gyro = sense.get_gyroscope_raw()
     X = round(gyro['x'], 5)
@@ -69,7 +69,7 @@ def get_gyro():
     gyro_list = [X,Y]
     return gyro_list
 
-    
+
 # f/n print_tag_pos()
 """ This function enters the command apg in the tag node and returns
 the decoded value of the line provided the length of the returned values
@@ -102,7 +102,7 @@ def tag_decode(line):
     global init
     global iterat
     global Qf
-    
+
     Line = line.split()
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
@@ -124,7 +124,7 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf =    int((Line[3].strip('qf:')))
-      
+
 # f/n predict_state(X_est,Accel)
 """
 Predicts the state of the tag based on previous positon and acceleration
@@ -209,44 +209,47 @@ Updates the Process covariance matrix prior to process beginning anew
 # input Pc, Kg
 # return Pc
 def update_PC(Pc,Kg):
-    num = I- (np.dot(Kg,H))
+    num = I - (np.dot(Kg,H))
     Pc = np.dot(num,Pc)
     Pc[0][1] = 0.0
     Pc[1][0] = 0.0
     return(Pc)
-    
+
 # f/n det_stat(tag_loc,Accel)
-"""deterimines if the tag is stationary or not """
+""" deterimines if the tag is stationary or not """
 def det_stat(tag_loc,Accel):
     global tac_loc_list
     global iterat
     tag_loc_list.append(tag_loc)
     length = len(tag_loc_list)
     if iterat >= 0 and length>1:
-        print(tag_loc_list)
+        diff_pos_X = tag_loc[0][iterat-1] - tag_loc[0][iterat-2] # difference between the last two locations of tag in the X_coordinate
+        diff_pos_Y = tag_loc[1][iterat-1] - tag_loc[1][iterat-2] # difference between the last two locations of tag in the X_coordinate
+        if (abs(diff_pos_X) < .05 and abs(diff_pos_Y) < .05 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
+            print("Device is stationary")
 
 if __name__ == "__main__":
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
-        tag_pos = print_tag_pos() ## The tag position identically observed by Decawave
+        tag_pos = print_tag_pos() # The tag position identically observed by Decawave
         try:
-            if tag_pos is not None: ## Check to ensure command 'apg' returns a valid ouput
+            if tag_pos is not None: # Check to ensure command 'apg' returns a valid ouput
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 sort_qf(tag_pos)
-                ##det_stat(tag_loc,accel)
+                det_stat(tag_loc,accel)
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
                 if iterat == 0 and Qf > 0:
                     delta_t = [time.time()]
-                elif iterat == 1:## Used to set the initial tag_location
+                elif iterat == 1:# Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
                     Pc = init_cov()
                     delta_t.append(time.time())
-                    dT= round(delta_t[1] - delta_t[0],4)
+                    dT = round(delta_t[1] - delta_t[0],4)
                     print(f"At iteration {iterat} The estimated position is {X_est} with a delta_T of {dT}")
                 elif iterat>1:
                     delta_t.append(time.time())
-                    dT= round(delta_t[iterat-1] - delta_t[iterat - 2],4)
+                    dT = round(delta_t[iterat-1] - delta_t[iterat - 2],4)
                     X_est = predict_state(X_est,accel)
                     Pc = predict_cov(Pc)
                     print(f"At Iteration {iterat} The predicted position is {X_est} with a process covariance of {Pc}")
