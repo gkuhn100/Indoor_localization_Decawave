@@ -69,7 +69,6 @@ def get_gyro():
     gyro_list = [X,Y]
     return gyro_list
 
-
 # f/n print_tag_pos()
 """ This function enters the command apg in the tag node and returns
 the decoded value of the line provided the length of the returned values
@@ -120,11 +119,13 @@ returns the qualitfy factor, qf
 # input line
 # return qf
 def sort_qf(line):
-    global Qf
+    global NLOS
     Line = line.split(" ")
     Line = Line[1:]
-    Qf =    int((Line[3].strip('qf:')))
-
+    Qf = int((Line[3].strip('qf:')))
+    if Qf == 0:
+        NLOS = True
+    return Qf
 # f/n predict_state(X_est,Accel)
 """
 Predicts the state of the tag based on previous positon and acceleration
@@ -236,10 +237,10 @@ if __name__ == "__main__":
         try:
             if tag_pos is not None: # Check to ensure command 'apg' returns a valid ouput
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
-                sort_qf(tag_pos)
+                qf = sort_qf(tag_pos)
                 det_stat(tag_loc,accel)
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
-                if iterat == 0 and Qf > 0:
+                if iterat == 0 and qf > 0:
                     delta_t = [time.time()]
                 elif iterat == 1:# Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
@@ -247,7 +248,7 @@ if __name__ == "__main__":
                     delta_t.append(time.time())
                     dT = round(delta_t[1] - delta_t[0],4)
                     print(f"At iteration {iterat} The estimated position is {X_est} with a delta_T of {dT}")
-                elif iterat>1:
+                elif iterat > 1:
                     delta_t.append(time.time())
                     dT = round(delta_t[iterat-1] - delta_t[iterat - 2],4)
                     X_est = predict_state(X_est,accel)
