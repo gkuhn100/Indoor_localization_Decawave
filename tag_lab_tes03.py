@@ -43,7 +43,7 @@ tag_loc_list = []# list to contain all the observed tag_loc; useful in determini
 
 """ Establish a serial connection between tag and Pi """
 baudrate = 115200
-port1 = "/dev/ttyACM1"
+port1 = "/dev/ttyACM0"
 ser = serial.Serial(port1, baudrate, timeout = 1)
 time.sleep(1)
 
@@ -100,13 +100,17 @@ Additionally iterates the iterat variable everytime it is run
 def tag_decode(line):
     global init
     global iterat
-    global Qf
+    global stat
+    global tag_loc_list
 
     Line = line.split()
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
-    tag_loc  = [X_pos, Y_pos]
+    if stat == False:
+        tag_loc  = [X_pos, Y_pos]
+    else:
+        tag_loc = [tag_loc_list[iterat][0],tag_loc_list[iterat][1]]
     if init == True and Qf > 0:
         iterat +=1
     return tag_loc
@@ -120,6 +124,7 @@ returns the qualitfy factor, qf
 # return qf
 def sort_qf(line):
     global NLOS
+    global Qf
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
@@ -127,7 +132,7 @@ def sort_qf(line):
         NLOS = True
     else:
         NLOS = False
-    return Qf
+
 # f/n predict_state(X_est,Accel)
 """
 Predicts the state of the tag based on previous positon and acceleration
@@ -185,6 +190,7 @@ def kalman_gain(X_est,Pc):
     if NLOS == True: # if tag passes out of LOS Reset Kalman Gain to original value
         Kg = np.array([[.833,0.0],[0.0,.833]])
         Kg_temp = np.array([[0.0,0.0],[0.0,0.0]])
+        return Kg_temp
     else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
@@ -225,13 +231,16 @@ def update_PC(Pc,Kg):
 def det_stat(tag_loc,Accel):
     global tac_loc_list
     global iterat
+    global Qf
+    global stat
     tag_loc_list.append(tag_loc)
     length = len(tag_loc_list)
     if iterat >= 0 and length>1:
-        diff_pos_X = tag_loc[0][iterat-1] - tag_loc[0][iterat-2] # difference between the last two locations of tag in the X_coordinate
-        diff_pos_Y = tag_loc[1][iterat-1] - tag_loc[1][iterat-2] # difference between the last two locations of tag in the X_coordinate
+        diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
+        diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
         if (abs(diff_pos_X) < .05 and abs(diff_pos_Y) < .05 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
             print("Device is stationary")
+            stat = True
 
 if __name__ == "__main__":
     while True:
@@ -240,11 +249,11 @@ if __name__ == "__main__":
         tag_pos = print_tag_pos() # The tag position identically observed by Decawave
         try:
             if tag_pos is not None: # Check to ensure command 'apg' returns a valid ouput
-                qf = sort_qf(tag_pos) # gets quality factor
+                sort_qf(tag_pos) # gets quality factor
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 det_stat(tag_loc,accel)
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
-                if iterat == 0 and qf > 0:
+                if iterat == 0 and Qf > 0:
                     delta_t = [time.time()]
                 elif iterat == 1:# Used to set the initial tag_location
                     X_est = predict_state(tag_loc,accel)
