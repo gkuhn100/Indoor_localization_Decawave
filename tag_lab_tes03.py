@@ -16,7 +16,7 @@ import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
-file_name = "1dot0_X_1_dot.txt"
+
 
 """ Below are the arrays that will be used for Kalman Filtering"""
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
@@ -242,6 +242,12 @@ def det_stat(tag_loc,Accel):
         if (abs(diff_pos_X) < .05 and abs(diff_pos_Y) < .05 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
             print("Device is stationary")
             stat = True
+            
+ def write_file():
+    with open('C:/Users/Gregory Kuhn/Desktop/Decawave_Test01/0dot0X5dot5Y.txt', 'w', encoding = 'UTF8', newline = '\n') as file:
+    writer = csv.writer(file)
+    for line in tag_list:
+        writer.writerow(line)
 
 if __name__ == "__main__":
     while True:
@@ -275,5 +281,5 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
-            
+            write_file()
         time.sleep(.5)
