@@ -16,6 +16,7 @@ import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+file_name = "1dot0_X_1_dot.txt"
 
 """ Below are the arrays that will be used for Kalman Filtering"""
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
@@ -274,4 +275,5 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
+            
         time.sleep(.5)
