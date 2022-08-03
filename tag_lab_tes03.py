@@ -13,6 +13,7 @@ import serial
 import time
 import datetime
 import numpy as np
+import csv
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
@@ -40,6 +41,7 @@ delta_X = .5 # Initial Uncertaintity for x position
 delta_Y = .5 # Initial Uncertaintity for y position
 G = 9.8065 # Converting Gforce to m/s^2
 tag_loc_list = []# list to contain all the observed tag_loc; useful in determining if tag is stationary
+filename = "X_1dot0Y_1dot0Y.csv"
 
 """ Establish a serial connection between tag and Pi """
 baudrate = 115200
@@ -233,7 +235,18 @@ def det_stat(tag_loc,Accel):
         if (abs(diff_pos_X) < .05 and abs(diff_pos_Y) < .05 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
             print("Device is stationary")
 
+# f/n file_write
+"""Used to write relevant data to the file """
+ def file_write(tag_data):
+     global
+     init = ['Iteration', 'Time', 'Delta_T', 'Acceleration', 'Qf', 'Tag_loc', 'Tag_predict', 'Tag_update', 'KG', 'PC', 'Update_Pc']
+     with open(filename) as file:
+         writer = csv.writer(file, delimiter = ',')
+         writer.writerow(init)
+         writer.writerow(tag_data)
+
 if __name__ == "__main__":
+    tag_data_tot = []
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
@@ -262,7 +275,10 @@ if __name__ == "__main__":
                     X_est = update_state(X_est,tag_loc,Kg)
                     Pc = update_PC(Pc,Kg)
                     print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                    Tag_data = [time_now, dT,qf,accel,tag_loc,X_est,Kg,Pc]
+                    Tag_data_tot.append(Tag_data)
         except KeyboardInterrupt:
+            file_write(Tag_data)
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
         time.sleep(.5)
