@@ -146,7 +146,6 @@ observed tag_loc
 # return X_est
 def predict_state(X_est, Accel):
     global dT
-    global NLOS
 
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
@@ -244,7 +243,7 @@ def det_stat(tag_loc,Accel):
         if (abs(diff_pos_X) < .05 and abs(diff_pos_Y) < .05 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
             print("Device is stationary")
             stat = True
-            
+
  def write_file():
     with open('C:/Users/Gregory Kuhn/Desktop/Decawave_Test01/0dot0X5dot5Y.txt', 'w', encoding = 'UTF8', newline = '\n') as file:
     writer = csv.writer(file)
@@ -273,17 +272,14 @@ if __name__ == "__main__":
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 det_stat(tag_loc,accel)
                 print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
-                if iterat == 0 and Qf > 0:
-                    delta_t = [time.time()]
-                elif iterat == 1:# Used to set the initial tag_location
-                    X_est = predict_state(tag_loc,accel)
+                if iterat == 1 and Qf > 0:# Used to set the initial tag_location
                     Pc = init_cov()
-                    delta_t.append(time.time())
-                    dT = round(delta_t[1] - delta_t[0],4)
-                    print(f"At iteration {iterat} The estimated position is {X_est} with a delta_T of {dT}")
+                    delta_t = [time.time()]
+                    print(f"At iteration {iterat} The estimated position is {tag_loc}")
+                    X_est = tag_loc
                 elif iterat > 1:
                     delta_t.append(time.time())
-                    dT = round(delta_t[iterat-1] - delta_t[iterat - 2],4)
+                    dT = round(delta_t[iterat] - delta_t[iterat - 1],4)
                     X_est = predict_state(X_est,accel)
                     Pc = predict_cov(Pc)
                     print(f"At Iteration {iterat} The predicted position is {X_est} with a process covariance of {Pc}")
@@ -291,8 +287,8 @@ if __name__ == "__main__":
                     X_est = update_state(X_est,tag_loc,Kg)
                     Pc = update_PC(Pc,Kg)
                     print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
-                    Tag_data = [time_now, dT,qf,accel,tag_loc,X_est,Kg,Pc]
-                    Tag_data_tot.append(Tag_data)
+                    #Tag_data = [time_now, dT,qf,accel,tag_loc,X_est,Kg,Pc]
+                    #Tag_data_tot.append(Tag_data)
         except KeyboardInterrupt:
             file_write(Tag_data)
             print('Error! Keyboard interrupt detected, now closing ports! ')
