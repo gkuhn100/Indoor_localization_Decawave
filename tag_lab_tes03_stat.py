@@ -35,12 +35,11 @@ count = 0 # Variable that increases when tag is succesfull detected
 iterat  = 0 # How many times the code runs
 init  = False # Variable that is used to initialize the code; true after it has been detected at three consecutive times
 stat  = False # Variable to determine if tag is stationary
-NLOS   = False # Variable to check if tag is in NLOS or not
 delta_X = .5 # Initial Uncertaintity for x position
 delta_Y = .5 # Initial Uncertaintity for y position
 G = 9.8065 # Converting Gforce to m/s^2
 tag_loc_list = []# list to contain all the observed tag_loc; useful in determining if tag is stationary
-filename = "X_1dot0Y_1dot0Y.csv"
+
 
 """ Establish a serial connection between tag and Pi """
 baudrate = 115200
@@ -103,6 +102,7 @@ def tag_decode(line):
     global iterat
     global stat
     global tag_loc_list
+    stat_count = 0
 
     Line = line.split()
     Line = Line[1:]
@@ -110,8 +110,11 @@ def tag_decode(line):
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
     if stat == False:
         tag_loc  = [X_pos, Y_pos]
+        stat_count = 0
     else:
-        tag_loc = [tag_loc_list[iterat][0],tag_loc_list[iterat][1]]
+        temp_iterat = iterat - stat_count
+        tag_loc = [tag_loc_list[temp_iterat][0],tag_loc_list[temp_iterat][1]]
+        stat_count +=1
     if init == True and Qf > 0:
         iterat +=1
     return tag_loc
@@ -129,10 +132,7 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
-    if Qf == 0:
-        NLOS = True
-    else:
-        NLOS = False
+
 
 # f/n predict_state(X_est,Accel)
 """
@@ -144,7 +144,6 @@ observed tag_loc
 # return X_est
 def predict_state(X_est, Accel):
     global dT
-
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
     return(X_est)
@@ -169,14 +168,10 @@ Remember initial Process covariance is decided beforehand and listed above
 # input Pc
 # return Pc
 def predict_cov(Pc):
-    global NLOS
-    if NLOS == True: ## if tag passes out of LOS this code will reset the Pc to original value
-        Pc = np.array([[(delta_X * delta_X),0.0], [0.0,delta_Y*delta_Y]], dtype=float)
-    else:
-        Pc = np.dot(A,Pc)
-        Pc = np.dot(Pc,At) + Q
-        Pc[0][1] = 0.0
-        Pc[1][0] = 0.0
+    Pc = np.dot(A,Pc)
+    Pc = np.dot(Pc,At) + Q
+    Pc[0][1] = 0.0
+    Pc[1][0] = 0.0
     return(Pc)
 
 # f/n kalman_gain(X_est,Pc)
@@ -186,19 +181,14 @@ Adjust the Kalman Gain
 # input X_est,Pc
 # return Kg
 def kalman_gain(X_est,Pc):
-    global NLOS
-    if NLOS == True: # if tag passes out of LOS Reset Kalman Gain to original value
-        Kg = np.array([[.833,0.0],[0.0,.833]])
-        Kg_temp = np.array([[0.0,0.0],[0.0,0.0]])
-        return Kg_temp
-    else:
-        Kg_num = np.dot(Pc,H)
-        Kg_den = np.dot(H,Pc)
-        Kg_den = np.dot(Kg_den,H) + R
-        Kg     = np.divide(Kg_num,Kg_den)
-        Kg[0][1] = 0.0
-        Kg[1][0] = 0.0
-        return(Kg)
+
+    Kg_num = np.dot(Pc,H)
+    Kg_den = np.dot(H,Pc)
+    Kg_den = np.dot(Kg_den,H) + R
+    Kg     = np.divide(Kg_num,Kg_den)
+    Kg[0][1] = 0.0
+    Kg[1][0] = 0.0
+    return(Kg)
 
 # f/n update_state(X_est,tag_apg,Kg)
 """"
@@ -242,24 +232,8 @@ def det_stat(tag_loc,Accel):
             print("Device is stationary")
             stat = True
 
- def write_file():
-    with open('C:/Users/Gregory Kuhn/Desktop/Decawave_Test01/0dot0X5dot5Y.txt', 'w', encoding = 'UTF8', newline = '\n') as file:
-    writer = csv.writer(file)
-    for line in tag_list:
-        writer.writerow(line)
-
-# f/n file_write
-"""Used to write relevant data to the file """
- def file_write(tag_data):
-     global
-     init = ['Iteration', 'Time', 'Delta_T', 'Acceleration', 'Qf', 'Tag_loc', 'Tag_predict', 'Tag_update', 'KG', 'PC', 'Update_Pc']
-     with open(filename) as file:
-         writer = csv.writer(file, delimiter = ',')
-         writer.writerow(init)
-         writer.writerow(tag_data)
-
 if __name__ == "__main__":
-    tag_data_tot = []
+
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
