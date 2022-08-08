@@ -1,10 +1,8 @@
 """
 Created on Sun Jun 26 16:59:03 2022
-
 This file is used to test ability of only one serially connected Decawave tag's
 position to be tracked and predicted with a kalman filter.
 Connect to the tag pi is a piHat and one Decawave Tag
-
 @author: gkuhn
 """
 
@@ -36,7 +34,7 @@ dT   =  0 # Variable to measure the time elapsed between tag detections
 count = 0 # Variable that increases when tag is succesfull detected
 iterat  = 0 # How many times the code runs
 init  = False # Variable that is used to initialize the code; true after it has been detected at three consecutive times
-stat  = False # Variable to determine if tag is stationary
+
 NLOS   = False # Variable to check if tag is in NLOS or not
 delta_X = .5 # Initial Uncertaintity for x position
 delta_Y = .5 # Initial Uncertaintity for y position
@@ -110,10 +108,7 @@ def tag_decode(line):
     Line = Line[1:]
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
-    if stat == False:
-        tag_loc  = [X_pos, Y_pos]
-    else:
-        tag_loc = [tag_loc_list[iterat][0],tag_loc_list[iterat][1]]
+    tag_loc  = [X_pos, Y_pos]
     if init == True and Qf > 0:
         iterat +=1
     return tag_loc
@@ -131,6 +126,7 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
+    Qf = Qf +1
     if Qf == 0:
         NLOS = True
     else:
@@ -228,40 +224,8 @@ def update_PC(Pc,Kg):
     Pc[1][0] = 0.0
     return(Pc)
 
-# f/n det_stat(tag_loc,Accel)
-""" deterimines if the tag is stationary or not """
-def det_stat(tag_loc,Accel):
-    global tac_loc_list
-    global iterat
-    global Qf
-    global stat
-    tag_loc_list.append(tag_loc)
-    length = len(tag_loc_list)
-    if iterat >= 0 and length>1:
-        diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
-        diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
-        if (abs(diff_pos_X) < .05 and abs(diff_pos_Y) < .05 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
-            print("Device is stationary")
-            stat = True
-
- def write_file():
-    with open('C:/Users/Gregory Kuhn/Desktop/Decawave_Test01/0dot0X5dot5Y.txt', 'w', encoding = 'UTF8', newline = '\n') as file:
-    writer = csv.writer(file)
-    for line in tag_list:
-        writer.writerow(line)
-
-# f/n file_write
-"""Used to write relevant data to the file """
- def file_write(tag_data):
-     global
-     init = ['Iteration', 'Time', 'Delta_T', 'Acceleration', 'Qf', 'Tag_loc', 'Tag_predict', 'Tag_update', 'KG', 'PC', 'Update_Pc']
-     with open(filename) as file:
-         writer = csv.writer(file, delimiter = ',')
-         writer.writerow(init)
-         writer.writerow(tag_data)
-
 if __name__ == "__main__":
-    tag_data_tot = []
+    tag_loc_list = []
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
@@ -270,28 +234,26 @@ if __name__ == "__main__":
             if tag_pos is not None: # Check to ensure command 'apg' returns a valid ouput
                 sort_qf(tag_pos) # gets quality factor
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
-                det_stat(tag_loc,accel)
-                print(f"At time {time_now} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
+                tag_loc_list.append(tag_loc)
+                print(f"At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
                 if iterat == 1 and Qf > 0:# Used to set the initial tag_location
                     Pc = init_cov()
                     delta_t = [time.time()]
-                    print(f"At iteration {iterat} The estimated position is {tag_loc}")
-                    X_est = tag_loc
+                    X_est = tag_loc_list[iterat-1]
                 elif iterat > 1:
                     delta_t.append(time.time())
-                    dT = round(delta_t[iterat] - delta_t[iterat - 1],4)
+                    dT = round(delta_t[iterat-1] - delta_t[iterat - 2],4)
                     X_est = predict_state(X_est,accel)
                     Pc = predict_cov(Pc)
-                    print(f"At Iteration {iterat} The predicted position is {X_est} with a process covariance of {Pc}")
+                    print(f"The predicted position is {X_est} with a process covariance of {Pc}")
                     Kg = kalman_gain(X_est,Pc)
-                    X_est = update_state(X_est,tag_loc,Kg)
+                    X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                     Pc = update_PC(Pc,Kg)
                     print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
-                    #Tag_data = [time_now, dT,qf,accel,tag_loc,X_est,Kg,Pc]
-                    #Tag_data_tot.append(Tag_data)
         except KeyboardInterrupt:
             file_write(Tag_data)
             print('Error! Keyboard interrupt detected, now closing ports! ')
             ser.close()
             write_file()
         time.sleep(.5)
+
