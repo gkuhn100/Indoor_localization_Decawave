@@ -111,7 +111,7 @@ def tag_decode(line):
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
     tag_loc  = [X_pos, Y_pos]
 
-    if init == True and Qf > 0:
+    if init == True:
         iterat +=1
     return tag_loc
 
@@ -246,7 +246,6 @@ if __name__ == "__main__":
                     Pc = init_cov()
                     delta_t = [time.time()]
                     X_est = tag_loc
-                    X_est = tag_loc_list[iterat-1]
                 elif iterat > 3:
                     delta_t.append(time.time())
                     dT = round(delta_t[iterat] - delta_t[iterat - 1],4)
