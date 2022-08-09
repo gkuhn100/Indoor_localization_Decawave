@@ -109,7 +109,7 @@ def tag_decode(line):
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
     tag_loc  = [X_pos, Y_pos]
-    if init == True and Qf > 0:
+    if init == True:
         iterat +=1
     return tag_loc
 
