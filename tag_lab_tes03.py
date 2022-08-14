@@ -145,6 +145,8 @@ def predict_state(X_est, Accel):
 
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
     X_est = np.dot(A,X_est) + np.dot(B,Accel)
+    X_est[0][1] = 0.0
+    X_est[1][0] = 0.0         
     return(X_est)
 
 """
