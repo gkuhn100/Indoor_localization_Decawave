@@ -36,8 +36,8 @@ iterat  = 0 # How many times the code runs
 init  = False # Variable that is used to initialize the code; true after it has been detected at three consecutive times
 
 NLOS   = False # Variable to check if tag is in NLOS or not
-delta_X = .5 # Initial Uncertaintity for x position
-delta_Y = .5 # Initial Uncertaintity for y position
+delta_X = .05 # Initial Uncertaintity for x position
+delta_Y = .05 # Initial Uncertaintity for y position
 G = 9.8065 # Converting Gforce to m/s^2
 tag_loc_list = []# list to contain all the observed tag_loc; useful in determining if tag is stationary
 filename = "X_1dot0Y_1dot0Y.csv"
