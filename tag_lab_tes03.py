@@ -211,6 +211,8 @@ def update_state(X_est,tag_apg,Kg):
     global NLOS
     num = tag_apg - np.dot(H,X_est)
     X_est = X_est + np.dot(Kg,num)
+    X_est[0][1] = 0.0
+    X_est[1][0] = 0.0 
     return(X_est)
 
 # f/n update_Pc(Pc,Kg)
