@@ -83,8 +83,8 @@ def print_tag_pos():
         return line
     else:
         return None
-    
-    
+
+
 # f/n sort_qf(line)
 """
 only if the length is greater than 20
@@ -122,9 +122,10 @@ def tag_decode(line):
     X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
     Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
     tag_loc  = [X_pos, Y_pos]
-    if Qf != 0:
+    if Qf == 0:
+        iterat=0
+    else:
         iterat+=1
-    #print(Qf)
     return tag_loc
 
 
@@ -230,12 +231,10 @@ if __name__ == "__main__":
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 tag_loc_list.append(tag_loc)
                 print(f"At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
-                if iterat == 10 and (NLOS == False):# Used to set the initial tag_location
+                if iterat == 10 and (NLOS == False):# Used to set the initial tag_location NLOS isn't neccesarry
                     Pc = init_cov()
                     delta_t = [time.time()]
                     X_est = tag_loc
-                elif iter == 10 and NLOS == True:
-                    iterat = 0
                 elif iterat > 10:
                     delta_t.append(time.time())
                     dT = round(delta_t[iterat-10] - delta_t[iterat - 11],4)
