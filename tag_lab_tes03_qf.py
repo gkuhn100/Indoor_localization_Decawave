@@ -79,7 +79,7 @@ def print_tag_pos():
     ser.write("apg\r".encode())
     line = ser.readline()
     line = line.decode('utf-8')
-    if len(line) > 20 and (line.find("x") !=-1) and line.find("y"):
+    if len(line) > 20 and (line.find("x") !=-1) and line.find("y") !=-1:
         return line
     else:
         return None
