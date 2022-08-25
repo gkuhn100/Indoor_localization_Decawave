@@ -100,8 +100,6 @@ def sort_qf(line):
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
     Qf_list.append(Qf)
-    if iterat > 14 and iterat <18:
-        NLOS= True
     if iterat > 10:
         if (Qf_list[iterat-1]) and (Qf_list[iterat-2]) and (Qf_list[iterat-3])  == 0:
             NLOS = True
