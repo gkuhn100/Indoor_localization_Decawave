@@ -242,7 +242,7 @@ if __name__ == "__main__":
                     X_est = predict_state(X_est,accel)
                     Pc = predict_cov(Pc)
                     print(f"The predicted position is {X_est} with a process covariance of {Pc}")
-                    if NLOS == True:
+                    if NLOS == False:
                         Kg = kalman_gain(X_est,Pc)
                         X_est = update_state(X_est,tag_loc_list[iterat-iterat],Kg)
                         Pc = update_PC(Pc,Kg)
