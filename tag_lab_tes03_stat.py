@@ -239,15 +239,15 @@ if __name__ == "__main__":
                     delta_t.append(time.time())
                     dT = round(delta_t[iterat-10] - delta_t[iterat - 11],4)
                     X_est = predict_state(X_est,accel)
-                    Pc = predict_cov(Pc)
-                    print(f"The predicted position is {X_est} with a process covariance of {Pc}")
                     if NLOS == False:
+                        Pc = predict_cov(Pc)
+                        print(f"The predicted position is {X_est} with a process covariance of {Pc}")
                         Kg = kalman_gain(X_est,Pc)
                         X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                         Pc = update_PC(Pc,Kg)
                         print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
                     else:
-                        print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The  Pc is still {Pc} and the Predicted state is {X_est}")
+                        print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est} with a dt of {dT}")
                         ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
             print('Error! Keyboard interrupt detected, now closing ports! ')
