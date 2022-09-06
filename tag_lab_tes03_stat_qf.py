@@ -74,10 +74,12 @@ def get_accel():
         G_Force_Y.append(Y)
 
     elif iterat == 10 and temp == False:
-            G_2_force_x = sum(G_Force_X) / len(G_Force_X)
-            G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)
             temp = True
 
+    elif iterat == 10 and temp == True:
+            G_2_force_x = sum(G_Force_X) / len(G_Force_X)
+            G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)     
+        
     elif (iterat >  10) and (temp == True):
         X = X - G_2_force_x
         Y = Y - G_2_force_y
