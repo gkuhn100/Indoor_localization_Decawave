@@ -16,7 +16,7 @@ sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-""" Below are the arrays that will be used for Kalman Filtering"""
+""" Below are the arrays that will be used for Kalman Filtering """
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
 At= np.transpose(A) # Transpose of matrix A
 B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
@@ -39,12 +39,11 @@ delta_Y = .05 # Initial Uncertaintity for y position
 G = 9.8065 # Converting Gforce to m/s^2
 tag_loc_list = []# list to contain all the observed tag_loc; useful in determining if tag is stationary
 Qf_list = [] #list which contains all the qualtity factor values
-G_Force_X = []
-G_Force_Y = []
-temp = False
-dildo = False
-G_2_force_x = 0
-G_2_force_y = 0
+G_Force_X = [] # list which contains all recorded G_forces experienced by tag in X_dimension
+G_Force_Y = [] # list which contains all recorded G_forces experienced by tag in Y_dimension
+G_2_force_x = 0 # initiliazing X value of G_force
+G_2_force_y = 0 # initiliazing X value of G_force
+temp = False # used for acceleration
 
 """ Establish a serial connection between tag and Pi """
 baudrate = 115200
@@ -73,13 +72,13 @@ def get_accel():
     if iterat < 10:
         G_Force_X.append(X)
         G_Force_Y.append(Y)
-            
+
     elif iterat == 10 and temp == False:
             G_2_force_x = sum(G_Force_X) / len(G_Force_X)
             G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)
             temp = True
-    
-    elif (iterat >=  10) and (temp == True):
+
+    elif (iterat >  10) and (temp == True):
         X = X - G_2_force_x
         Y = Y - G_2_force_y
 
@@ -110,7 +109,6 @@ def print_tag_pos():
     else:
         return None
 
-
 # f/n sort_qf(line)
 """
 only if the length is greater than 20
@@ -132,7 +130,6 @@ def sort_qf(line):
         else:
             NLOS = False
 
-
 # f/n tag_decode(line)
 """
 only if the length is greater than 20
@@ -153,7 +150,6 @@ def tag_decode(line):
     else:
         iterat+=1
     return tag_loc
-
 
 # f/n predict_state(X_est,Accel)
 """
@@ -245,7 +241,6 @@ def update_PC(Pc,Kg):
     Pc[1][0] = 0.0
     return(Pc)
 
-
 # f/n det_stat(tag_loc,Accel)
 """ deterimines if the tag is stationary or not """
 def det_stat(tag_loc,Accel):
@@ -258,13 +253,11 @@ def det_stat(tag_loc,Accel):
     if iterat > 10 and length>1:
         diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
         diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
-        print(f"dildo {diff_pos_X}")
-        if (abs(diff_pos_X) < 1 and abs(diff_pos_Y) < 1 and abs(Accel[0]) < .5  and abs(Accel[1]) <.5):
+        if (abs(diff_pos_X) < .03 and abs(diff_pos_Y) < .03 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
             print("Device is stationary")
             stat = True
         else:
             stat = False
-
 
 if __name__ == "__main__":
     tag_loc_list = []
