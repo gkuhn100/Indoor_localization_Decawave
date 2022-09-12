@@ -274,11 +274,6 @@ if __name__ == "__main__":
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 tag_loc_list.append(tag_loc)
                 print(f"At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
-                if stat == True:
-                    i+=1
-                    tag_loc = tag_loc_list[iterat-i]
-                else:
-                    i = 0
                 if iterat == 10 and (NLOS == False):# Used to set the initial tag_location NLOS isn't neccesarry
                         Pc = init_cov()
                         delta_t = [time.time()]
