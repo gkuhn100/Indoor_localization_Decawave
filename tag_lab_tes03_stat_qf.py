@@ -296,7 +296,7 @@ if __name__ == "__main__":
                             else:
                                 print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est} with a dt of {dT}")
                                 ## consider resetting the Kalman gain and process covaraince values differently
-            except KeyboardInterrupt:
+        except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
-            time.sleep(.5)
+        time.sleep(.5)
