@@ -74,10 +74,12 @@ def get_accel():
         G_Force_Y.append(Y)
 
     elif iterat == 10 and temp == False:
-            G_2_force_x = sum(G_Force_X) / len(G_Force_X)
-            G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)
             temp = True
 
+    elif iterat == 10 and temp == True:
+            G_2_force_x = sum(G_Force_X) / len(G_Force_X)
+            G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)     
+        
     elif (iterat >  10) and (temp == True):
         X = X - G_2_force_x
         Y = Y - G_2_force_y
@@ -272,11 +274,6 @@ if __name__ == "__main__":
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 tag_loc_list.append(tag_loc)
                 print(f"At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
-                if stat == True:
-                    i+=1
-                    tag_loc = tag_loc_list[iterat-i]
-                else:
-                    i = 0
                 if iterat == 10 and (NLOS == False):# Used to set the initial tag_location NLOS isn't neccesarry
                         Pc = init_cov()
                         delta_t = [time.time()]
@@ -285,18 +282,21 @@ if __name__ == "__main__":
                         det_stat(tag_loc,accel)
                         delta_t.append(time.time())
                         dT = round(delta_t[iterat-10] - delta_t[iterat - 11],4)
-                        X_est = predict_state(X_est,accel)
-                        if NLOS == False:
-                            Pc = predict_cov(Pc)
-                            print(f"The predicted position is {X_est} with a process covariance of {Pc}")
-                            Kg = kalman_gain(X_est,Pc)
-                            X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
-                            Pc = update_PC(Pc,Kg)
-                            print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                        if stat == True:
+                            print(f"As the AV is stationary the tag's position remains estimated at {X_est}")
                         else:
-                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est} with a dt of {dT}")
-                            ## consider resetting the Kalman gain and process covaraince values differently
+                            X_est = predict_state(X_est,accel)
+                            if NLOS == False:
+                                Pc = predict_cov(Pc)
+                                print(f"The predicted position is {X_est} with a process covariance of {Pc}")
+                                Kg = kalman_gain(X_est,Pc)
+                                X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
+                                Pc = update_PC(Pc,Kg)
+                                print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                            else:
+                                print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est} with a dt of {dT}")
+                                ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
-            print('Error! Keyboard interrupt detected, now closing ports! ')
-            ser.close()
+                print('Error! Keyboard interrupt detected, now closing ports! ')
+                ser.close()
         time.sleep(.5)
