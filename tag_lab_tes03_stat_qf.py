@@ -78,8 +78,8 @@ def get_accel():
 
     elif iterat == 10 and temp == True:
             G_2_force_x = sum(G_Force_X) / len(G_Force_X)
-            G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)     
-        
+            G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)
+
     elif (iterat >  10) and (temp == True):
         X = X - G_2_force_x
         Y = Y - G_2_force_y
@@ -255,6 +255,8 @@ def det_stat(tag_loc,Accel):
     if iterat > 10 and length>1:
         diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
         diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
+        print(f"The current x_position is {tag_loc_list[iterat-1][0]} the previous x_postion is {tag_loc_list[iterat-2][0]} ")
+        print(f"The current y_position is {tag_loc_list[iterat-1][1]} the previous y_postion is {tag_loc_list[iterat-2][1]} ")
         if (abs(diff_pos_X) < .03 and abs(diff_pos_Y) < .03 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
             print("Device is stationary")
             stat = True
@@ -292,7 +294,7 @@ if __name__ == "__main__":
                                 Kg = kalman_gain(X_est,Pc)
                                 X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                                 Pc = update_PC(Pc,Kg)
-                                print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                            print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
                             else:
                                 print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est} with a dt of {dT}")
                                 ## consider resetting the Kalman gain and process covaraince values differently
