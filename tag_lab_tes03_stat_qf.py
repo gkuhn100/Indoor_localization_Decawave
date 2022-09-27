@@ -13,7 +13,7 @@ import datetime
 import numpy as np
 from sense_hat import SenseHat
 sense = SenseHat()
-np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
 
 """ Below are the arrays that will be used for Kalman Filtering """
