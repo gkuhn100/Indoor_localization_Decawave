@@ -80,7 +80,7 @@ def get_accel():
             G_2_force_x = sum(G_Force_X) / len(G_Force_X)
             G_2_force_y = sum(G_Force_Y) / len(G_Force_Y)
 
-    elif (iterat >  10) and (temp == True):
+    elif (iterat > 10) and (temp == True):
         X = X - G_2_force_x
         Y = Y - G_2_force_y
 
@@ -126,7 +126,7 @@ def sort_qf(line):
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
     Qf_list.append(Qf)
-    if iterat > 10:
+    if iterat > 11:
         if (Qf_list[iterat-1]) and (Qf_list[iterat-2]) and (Qf_list[iterat-3])  == 0:
             NLOS = True
         else:
@@ -207,8 +207,8 @@ def kalman_gain(X_est,Pc):
     global NLOS
     if NLOS == True: # if tag passes out of LOS Reset Kalman Gain to original value
         Kg = np.array([[.833,0.0],[0.0,.833]]) ##  or can set Kg to last kalma gain value
-        Kg_temp = np.array([[0.0,0.0],[0.0,0.0]])
-        return Kg_temp
+        #Kg_temp = np.array([[0.0,0.0],[0.0,0.0]])
+        return Kg
     else:
         Kg_num = np.dot(Pc,H)
         Kg_den = np.dot(H,Pc)
@@ -258,14 +258,12 @@ def det_stat(tag_loc,Accel):
         print(f"The current x_position is {tag_loc_list[iterat-1][0]} the previous x_postion is {tag_loc_list[iterat-2][0]} ")
         print(f"The current y_position is {tag_loc_list[iterat-1][1]} the previous y_postion is {tag_loc_list[iterat-2][1]} ")
         if (abs(diff_pos_X) < .03 and abs(diff_pos_Y) < .03 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
-            print("Device is stationary")
+            
             stat = True
         else:
             stat = False
 
 if __name__ == "__main__":
-    tag_loc_list = []
-    i = 0
     while True:
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
@@ -275,28 +273,30 @@ if __name__ == "__main__":
                 sort_qf(tag_pos) # gets quality factor
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 tag_loc_list.append(tag_loc)
-                print(f"At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf}")
+                print(f"\n At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf} and dT of {dT}")
                 if iterat == 10 and (NLOS == False):# Used to set the initial tag_location NLOS isn't neccesarry
                         Pc = init_cov()
                         delta_t = [time.time()]
                         X_est = tag_loc
                 elif iterat > 10:
-                        det_stat(tag_loc,accel)
                         delta_t.append(time.time())
                         dT = round(delta_t[iterat-10] - delta_t[iterat - 11],4)
+                if iterat > 11:
+                        det_stat(tag_loc,accel)
                         if stat == True:
-                            print(f"As the AV is stationary the tag's position remains estimated at {X_est}")
+                            print(f"As the AV is stationary the tag's position remains estimated at {X_est} the Pc remains {Pc} and Kalman Gain Remains at {Kg}")
                         else:
                             X_est = predict_state(X_est,accel)
+                            print(f"The predicted position is {X_est}")
                             if NLOS == False:
                                 Pc = predict_cov(Pc)
-                                print(f"The predicted position is {X_est} with a process covariance of {Pc}")
+                                print(f"The predicted process covariance of {Pc}")
                                 Kg = kalman_gain(X_est,Pc)
                                 X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                                 Pc = update_PC(Pc,Kg)
-                            print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                                print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
                             else:
-                                print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est} with a dt of {dT}")
+                                print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est}")
                                 ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
