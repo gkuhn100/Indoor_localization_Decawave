@@ -203,7 +203,7 @@ Adjust the Kalman Gain
 """
 # input X_est,Pc
 # return Kg
-def kalman_gain(X_est,Pc):
+def kalman_gain(Pc):
     global NLOS
     if NLOS == True: # if tag passes out of LOS Reset Kalman Gain to original value
         Kg = np.array([[.833,0.0],[0.0,.833]]) ##  or can set Kg to last kalma gain value
@@ -250,7 +250,7 @@ def det_stat(tag_loc,Accel):
     global iterat
     global Qf
     global stat
-    tag_loc_list.append(tag_loc)
+    #tag_loc_list.append(tag_loc)
     length = len(tag_loc_list)
     if iterat > 10 and length>1:
         diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
@@ -284,6 +284,7 @@ if __name__ == "__main__":
                 if iterat > 11:
                         det_stat(tag_loc,accel)
                         if stat == True:
+                            #Kg = kalman_gain(Pc)
                             print(f"As the AV is stationary the tag's position remains estimated at {X_est} the Pc remains {Pc} and Kalman Gain Remains at {Kg}")
                         else:
                             X_est = predict_state(X_est,accel)
@@ -291,7 +292,7 @@ if __name__ == "__main__":
                             if NLOS == False:
                                 Pc = predict_cov(Pc)
                                 print(f"The predicted process covariance of {Pc}")
-                                Kg = kalman_gain(X_est,Pc)
+                                Kg = kalman_gain(Pc)
                                 X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                                 Pc = update_PC(Pc,Kg)
                                 print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
