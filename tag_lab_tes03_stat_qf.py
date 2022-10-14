@@ -125,6 +125,8 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
+    if (iterat >= 14) and (iterat <=28): 
+        Qf = 0
     Qf_list.append(Qf)
     if iterat > 11:
         if (Qf_list[iterat-1]) and (Qf_list[iterat-2]) and (Qf_list[iterat-3])  == 0:
@@ -253,12 +255,11 @@ def det_stat(tag_loc,Accel):
     #tag_loc_list.append(tag_loc)
     length = len(tag_loc_list)
     if iterat > 10 and length>1:
-        diff_pos_X = tag_loc_list[iterat][0] - tag_loc_list[iterat-1][0] # difference between the last two locations of tag in the X_coordinate
-        diff_pos_Y = tag_loc_list[iterat][1] - tag_loc_list[iterat-1][1] # difference between the last two locations of tag in the X_coordinate
-        print(f"The current x_position is {tag_loc_list[iterat][0]} the previous x_postion is {tag_loc_list[iterat-1][0]} ")
-        print(f"The current y_position is {tag_loc_list[iterat][1]} the previous y_postion is {tag_loc_list[iterat-1][1]} ")
+        diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
+        diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
+        print(f"The current x_position is {tag_loc_list[iterat-1][0]} the previous x_postion is {tag_loc_list[iterat-2][0]} ")
+        print(f"The current y_position is {tag_loc_list[iterat-1][1]} the previous y_postion is {tag_loc_list[iterat-2][1]} ")
         if (abs(diff_pos_X) < .03 and abs(diff_pos_Y) < .03 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
-            
             stat = True
         else:
             stat = False
@@ -284,7 +285,7 @@ if __name__ == "__main__":
                 if iterat > 11:
                         det_stat(tag_loc,accel)
                         if stat == True:
-                            #Kg = kalman_gain(Pc)
+                            Kg = kalman_gain(Pc)
                             print(f"As the AV is stationary the tag's position remains estimated at {X_est} the Pc remains {Pc} and Kalman Gain Remains at {Kg}")
                         else:
                             X_est = predict_state(X_est,accel)
