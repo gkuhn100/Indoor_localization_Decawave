@@ -285,20 +285,22 @@ if __name__ == "__main__":
                 if iterat > 11:
                         det_stat(tag_loc,accel)
                         if stat == True:
-                            Kg = kalman_gain(Pc)
+                            #Kg = kalman_gain(Pc)
                             print(f"As the AV is stationary the tag's position remains estimated at {X_est} the Pc remains {Pc} and Kalman Gain Remains at {Kg}")
                         else:
                             X_est = predict_state(X_est,accel)
                             print(f"The predicted position is {X_est}")
-                        if NLOS == False:
+                        if NLOS == False and stat == False:
                             Pc = predict_cov(Pc)
                             print(f"The predicted process covariance of {Pc}")
                             Kg = kalman_gain(Pc)
                             X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                             Pc = update_PC(Pc,Kg)
                             print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
-                        else:
-                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est}")
+                        elif stat == True and NLOS == True:
+                            print("Warning the tag is out of the LOS ")
+                        elif stat == False and NLOS == True:
+                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Estimated State is {X_est}")
                             ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
