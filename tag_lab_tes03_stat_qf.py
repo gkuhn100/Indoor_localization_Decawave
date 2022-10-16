@@ -129,7 +129,7 @@ def sort_qf(line):
         Qf = 0
     Qf_list.append(Qf)
     if iterat > 11:
-        if (Qf_list[iterat-1]) and (Qf_list[iterat-2]) and (Qf_list[iterat-3])  == 0:
+        if (Qf_list[iterat-1]) == 0 and (Qf_list[iterat-2]) == 0 and (Qf_list[iterat-3])  == 0:
             NLOS = True
         else:
             NLOS = False
@@ -290,16 +290,16 @@ if __name__ == "__main__":
                         else:
                             X_est = predict_state(X_est,accel)
                             print(f"The predicted position is {X_est}")
-                            if NLOS == False:
-                                Pc = predict_cov(Pc)
-                                print(f"The predicted process covariance of {Pc}")
-                                Kg = kalman_gain(Pc)
-                                X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
-                                Pc = update_PC(Pc,Kg)
-                                print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
-                            else:
-                                print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est}")
-                                ## consider resetting the Kalman gain and process covaraince values differently
+                        if NLOS == False:
+                            Pc = predict_cov(Pc)
+                            print(f"The predicted process covariance of {Pc}")
+                            Kg = kalman_gain(Pc)
+                            X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
+                            Pc = update_PC(Pc,Kg)
+                            print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                        else:
+                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Predicted state is {X_est}")
+                            ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
