@@ -1,5 +1,19 @@
 # -*- coding: utf-8 -*-
 """
+Created on Sun Jan  8 13:08:18 2023
+
+@author: GregK
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jan  8 13:00:35 2023
+
+@author: GregK
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Sat Apr 30 20:53:47 2022
 
 @author: GregK
@@ -31,7 +45,7 @@ if tag1.isOpen:
 
 
 while(1):
-    tag1.write("lec\r".encode())
+    tag1.write("les\r".encode())
     line = tag1.readline().decode('utf-8')
     print(line)
     ##print(f'The line {line} is of length {len(line)}   ')
@@ -51,5 +65,5 @@ while(1):
     time.sleep(.5)
     
 
-df = pd.DataFrame('X_Pos': [x_pos],'Y_Pos':[y_pos], 'qf':[qf],
-                  'tag_name':[tag_name],'Datetime':[date])
+##df = pd.DataFrame('X_Pos':[x_pos],'Y_Pos':[y_pos], 'qf':[qf],
+##                  'tag_name':[tag_name],'Datetime':[date])
