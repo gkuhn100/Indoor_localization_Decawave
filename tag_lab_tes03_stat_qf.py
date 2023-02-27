@@ -15,6 +15,10 @@ from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
+"""file_loc"""
+file_loc = r'home/pi/Desktop/Test03'
+file_name = r'0d0t'
+
 
 """ Below are the arrays that will be used for Kalman Filtering """
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
