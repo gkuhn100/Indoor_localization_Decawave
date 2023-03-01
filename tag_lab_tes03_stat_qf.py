@@ -11,7 +11,7 @@ import serial
 import time
 import datetime
 import numpy as np
-import pandas as pd
+#import pandas as pd
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
@@ -56,9 +56,10 @@ PC_Posteiori_list = []
 QF_list = []
 KG_list = []
 Accel_list = []
-date_list = []
+Date_list = []
 Tag_pos_list = []
-Tag_loc_list = []
+Tag_loc_prior_list = []
+Tag_loc_post_list = []
 dT_list = []
 
 """ Establish a serial connection between tag and Pi """
@@ -141,6 +142,7 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
+    Qf = Qf + 2
     if (iterat >= 14) and (iterat <=28): 
         Qf = 0
     Qf_list.append(Qf)
@@ -300,25 +302,36 @@ if __name__ == "__main__":
                         dT = round(delta_t[iterat-10] - delta_t[iterat - 11],4)
                 if iterat > 11:
                         det_stat(tag_loc,accel)
+                        dT_list.append(dT)
+                        Tag_pos_list.append(tag_loc)
+                        QF_list.append(Qf)
+                        Accel_list.append(accel)
+                        Date_list.append(time_now)
                         if stat == True:
-                            #Kg = kalman_gain(Pc)
+                            Kg = kalman_gain(Pc)
                             print(f"As the AV is stationary the tag's position remains estimated at {X_est} the Pc remains {Pc} and Kalman Gain Remains at {Kg}")
+                            Tag_loc_prior_list.append(X_est) 
+                            Tag_loc_post_list.append(X_est) 
                         else:
                             X_est = predict_state(X_est,accel)
+                            Tag_loc_prior_list.append(X_est) 
                             print(f"The predicted position is {X_est}")
                         if NLOS == False and stat == False:
                             Pc = predict_cov(Pc)
                             print(f"The predicted process covariance of {Pc}")
                             Kg = kalman_gain(Pc)
                             X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
+                            Tag_loc_post_list.append(X_est) 
                             Pc = update_PC(Pc,Kg)
                             print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
                         elif stat == True and NLOS == True:
                             print("Warning the tag is out of the LOS ")
                         elif stat == False and NLOS == True:
                             print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Estimated State is {X_est}")
+                        
                             ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
         time.sleep(.5)
+
