@@ -11,6 +11,7 @@ import serial
 import time
 import datetime
 import numpy as np
+import pandas as pd
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
@@ -48,6 +49,17 @@ G_Force_Y = [] # list which contains all recorded G_forces experienced by tag in
 G_2_force_x = 0 # initiliazing X value of G_force
 G_2_force_y = 0 # initiliazing X value of G_force
 temp = False # used for acceleration
+
+""" List variables to store as a DataFrame  """ 
+PC_Priori_list = []
+PC_Posteiori_list = []
+QF_list = []
+KG_list = []
+Accel_list = []
+date_list = []
+Tag_pos_list = []
+Tag_loc_list = []
+dT_list = []
 
 """ Establish a serial connection between tag and Pi """
 baudrate = 115200
