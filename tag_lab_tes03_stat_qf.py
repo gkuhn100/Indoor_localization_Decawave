@@ -142,7 +142,7 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
-    Qf = Qf + 2
+    Qf = Qf + 23
     if (iterat >= 14) and (iterat <=28): 
         Qf = 0
     Qf_list.append(Qf)
@@ -164,8 +164,8 @@ def tag_decode(line):
     global iterat
     Line = line.split()
     Line = Line[1:]
-    X_pos = round(float((Line[0].strip('x:'))) * 1e-3 + .05,4)
-    Y_pos = round(float((Line[1].strip('y:'))) * 1e-3 + .05,4)
+    X_pos = round(float((Line[0].strip('x:'))),4)
+    Y_pos = round(float((Line[1].strip('y:'))),4)
     tag_loc  = [X_pos, Y_pos]
     if Qf == 0 and iterat <=10:
         iterat=0
@@ -183,8 +183,11 @@ observed tag_loc
 # return X_est
 def predict_state(X_est, Accel):
     global dT
+    print(f"dildo {X_est}")
+    X_est[0] = X_est[0]*1e-3
+    X_est[1] = X_est[1]*1e-3
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
-    X_est = np.dot(A,X_est) + np.dot(B,Accel)
+    X_est = np.dot(A,(X_est)) + np.dot(B,Accel)
     return(X_est)
 
 """
@@ -277,7 +280,7 @@ def det_stat(tag_loc,Accel):
         diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
         print(f"The current x_position is {tag_loc_list[iterat-1][0]} the previous x_postion is {tag_loc_list[iterat-2][0]} ")
         print(f"The current y_position is {tag_loc_list[iterat-1][1]} the previous y_postion is {tag_loc_list[iterat-2][1]} ")
-        if (abs(diff_pos_X) < .03 and abs(diff_pos_Y) < .03 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
+        if (abs(diff_pos_X) < 5 and abs(diff_pos_Y) < 5 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
             stat = True
         else:
             stat = False
@@ -327,8 +330,7 @@ if __name__ == "__main__":
                         elif stat == True and NLOS == True:
                             print("Warning the tag is out of the LOS ")
                         elif stat == False and NLOS == True:
-                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Estimated State is {X_est}")
-                        
+                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Estimated State is {X_est}")      
                             ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
