@@ -11,14 +11,15 @@ import serial
 import time
 import datetime
 import numpy as np
-#import pandas as pd
+import pandas as pd
 from sense_hat import SenseHat
 sense = SenseHat()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
 """file_loc"""
-file_loc = r'home/pi/Desktop/Test03'
-file_name = r'0d0t'
+file_loc = r'home/pi/Desktop/Test03/hi.xlsx'
+file_name = r'0d0t.csv'
+file_pos = file_loc + file_name
 
 
 """ Below are the arrays that will be used for Kalman Filtering """
@@ -49,6 +50,7 @@ G_Force_Y = [] # list which contains all recorded G_forces experienced by tag in
 G_2_force_x = 0 # initiliazing X value of G_force
 G_2_force_y = 0 # initiliazing X value of G_force
 temp = False # used for acceleration
+TC = 0 #Time counter
 
 """ List variables to store as a DataFrame  """ 
 PC_Priori_list = []
@@ -183,10 +185,7 @@ observed tag_loc
 # return X_est
 def predict_state(X_est, Accel):
     global dT
-    print(f"dildo {X_est}")
-    X_est[0] = X_est[0]*1e-3
-    X_est[1] = X_est[1]*1e-3
-    B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) # B matrix for converting control matrix matrix
+    B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) 
     X_est = np.dot(A,(X_est)) + np.dot(B,Accel)
     return(X_est)
 
@@ -278,15 +277,16 @@ def det_stat(tag_loc,Accel):
     if iterat > 10 and length>1:
         diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
         diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
-        print(f"The current x_position is {tag_loc_list[iterat-1][0]} the previous x_postion is {tag_loc_list[iterat-2][0]} ")
-        print(f"The current y_position is {tag_loc_list[iterat-1][1]} the previous y_postion is {tag_loc_list[iterat-2][1]} ")
+        print("The current x_position is {0} the previous x_postion is {1} ".format(tag_loc_list[iterat-1][0],tag_loc_list[iterat-2][0]))
+        print("The current x_position is {1} the previous x_postion is {1} ".format(tag_loc_list[iterat-1][1],tag_loc_list[iterat-2][1]))
         if (abs(diff_pos_X) < 5 and abs(diff_pos_Y) < 5 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
             stat = True
         else:
             stat = False
 
 if __name__ == "__main__":
-    while True:
+    while (TC < 50):
+        TC+=1
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
         tag_pos = print_tag_pos() # The tag position identically observed by Decawave
@@ -295,7 +295,7 @@ if __name__ == "__main__":
                 sort_qf(tag_pos) # gets quality factor
                 tag_loc = tag_decode(tag_pos) # Decodes and ouputs X,Y coordinate provide tag_pos is valied
                 tag_loc_list.append(tag_loc)
-                print(f"\n At time {time_now}, iteration {iterat} the tag is at observed position {tag_loc} and accelerating at {accel}m/s^2 with a quality factor of {Qf} and dT of {dT}")
+                print("\n At time {0}, iteration {1} the tag is at observed position {2} and accelerating at {3}m/s^2 with a quality factor of {4} and dT of {5}". format(time_now,iterat,tag_loc,accel,Qf,dT))
                 if iterat == 10 and (NLOS == False):# Used to set the initial tag_location NLOS isn't neccesarry
                         Pc = init_cov()
                         delta_t = [time.time()]
@@ -312,28 +312,31 @@ if __name__ == "__main__":
                         Date_list.append(time_now)
                         if stat == True:
                             Kg = kalman_gain(Pc)
-                            print(f"As the AV is stationary the tag's position remains estimated at {X_est} the Pc remains {Pc} and Kalman Gain Remains at {Kg}")
+                            print("As the AV is stationary the tag's position remains estimated at {0} the Pc remains {1} and Kalman Gain Remains at {2}".format(X_est,Pc,Kg))
                             Tag_loc_prior_list.append(X_est) 
                             Tag_loc_post_list.append(X_est) 
                         else:
                             X_est = predict_state(X_est,accel)
                             Tag_loc_prior_list.append(X_est) 
-                            print(f"The predicted position is {X_est}")
+                            print("The predicted position is {0}".format(X_est))
                         if NLOS == False and stat == False:
                             Pc = predict_cov(Pc)
-                            print(f"The predicted process covariance of {Pc}")
+                            print("The predicted process covariance of {0}".format(Pc))
                             Kg = kalman_gain(Pc)
                             X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
                             Tag_loc_post_list.append(X_est) 
                             Pc = update_PC(Pc,Kg)
-                            print(f"The kalman gain is {Kg} and the updated position is {X_est} with a updated pc of {Pc} and dt of {dT}")
+                            print("The kalman gain is {0} and the updated position is {1} with a updated pc of {2} and dt of {3}".format(Kg,X_est,Pc,dT))
                         elif stat == True and NLOS == True:
                             print("Warning the tag is out of the LOS ")
                         elif stat == False and NLOS == True:
-                            print(f"Warning the tag has passed out of the LOS! The Kalman Gain remains {Kg} The Pc is still {Pc} and the Estimated State is {X_est}")      
+                            print("Warning the tag has passed out of the LOS! The Kalman Gain remains {0} The Pc is still {1} and the Estimated State is {2}".format(Kg,Pc,X_est))      
                             ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
         time.sleep(.5)
+    dildo = {'QF': QF_list, 'Accel': Accel_list}
+    df = pd.DataFrame(data = dildo)
+    df.to_csv(file_name)
 
