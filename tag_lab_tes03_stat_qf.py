@@ -52,7 +52,7 @@ G_2_force_y = 0 # initiliazing X value of G_force
 temp = False # used for acceleration
 TC = 0 #Time counter
 
-""" List variables to store as a DataFrame  """ 
+""" List variables to store as a DataFrame  """
 PC_Priori_list = []
 PC_Posteiori_list = []
 QF_list = []
@@ -145,7 +145,7 @@ def sort_qf(line):
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
     Qf = Qf + 23
-    if (iterat >= 14) and (iterat <=28): 
+    if (iterat >= 14) and (iterat <=28):
         Qf = 0
     Qf_list.append(Qf)
     if iterat > 11:
@@ -185,7 +185,7 @@ observed tag_loc
 # return X_est
 def predict_state(X_est, Accel):
     global dT
-    B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float) 
+    B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float)
     X_est = np.dot(A,(X_est)) + np.dot(B,Accel)
     return(X_est)
 
@@ -313,30 +313,29 @@ if __name__ == "__main__":
                         if stat == True:
                             Kg = kalman_gain(Pc)
                             print("As the AV is stationary the tag's position remains estimated at {0} the Pc remains {1} and Kalman Gain Remains at {2}".format(X_est,Pc,Kg))
-                            Tag_loc_prior_list.append(X_est) 
-                            Tag_loc_post_list.append(X_est) 
+                            Tag_loc_prior_list.append(X_est)
+                            Tag_loc_post_list.append(X_est)
                         else:
                             X_est = predict_state(X_est,accel)
-                            Tag_loc_prior_list.append(X_est) 
+                            Tag_loc_prior_list.append(X_est)
                             print("The predicted position is {0}".format(X_est))
                         if NLOS == False and stat == False:
                             Pc = predict_cov(Pc)
                             print("The predicted process covariance of {0}".format(Pc))
                             Kg = kalman_gain(Pc)
                             X_est = update_state(X_est,tag_loc_list[iterat-1],Kg)
-                            Tag_loc_post_list.append(X_est) 
+                            Tag_loc_post_list.append(X_est)
                             Pc = update_PC(Pc,Kg)
                             print("The kalman gain is {0} and the updated position is {1} with a updated pc of {2} and dt of {3}".format(Kg,X_est,Pc,dT))
                         elif stat == True and NLOS == True:
                             print("Warning the tag is out of the LOS ")
                         elif stat == False and NLOS == True:
-                            print("Warning the tag has passed out of the LOS! The Kalman Gain remains {0} The Pc is still {1} and the Estimated State is {2}".format(Kg,Pc,X_est))      
+                            print("Warning the tag has passed out of the LOS! The Kalman Gain remains {0} The Pc is still {1} and the Estimated State is {2}".format(Kg,Pc,X_est))
                             ## consider resetting the Kalman gain and process covaraince values differently
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
         time.sleep(.5)
-    dildo = {'QF': QF_list, 'Accel': Accel_list}
+    dildo = {'Obs_Position':tag_pos_list,'predicted_state':Tag_loc_prior_list:'Updated State':Tag_loc_post_list,'Kalman Gain':Kg,'Process_Covariance':PC,'QF': QF_list, 'Accel': Accel_list, 'Datetime':Date_list}
     df = pd.DataFrame(data = dildo)
     df.to_csv(file_name)
-
