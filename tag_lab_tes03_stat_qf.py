@@ -145,7 +145,7 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
-    Qf = Qf + 23
+    #Qf = Qf + 23
     if (iterat >= 14) and (iterat <=28):
         Qf = 0
     Qf_list.append(Qf)
@@ -312,9 +312,8 @@ if __name__ == "__main__":
                         Accel_list.append(accel)
                         Date_list.append(time_now)
                         if stat == True:
-                            Kg = kalman_gain(Pc)
+                            #Kg = kalman_gain(Pc)
                             print("As the AV is stationary the tag's position remains estimated at {0} the Pc remains {1} and Kalman Gain Remains at {2}".format(X_est,Pc,Kg))
-                            Tag_loc_post_list.append(X_est)
                             Tag_loc_prior_list.append(X_est)
                             Tag_loc_post_list.append(X_est)
                         else:
@@ -331,8 +330,12 @@ if __name__ == "__main__":
                             print("The kalman gain is {0} and the updated position is {1} with a updated pc of {2} and dt of {3}".format(Kg,X_est,Pc,dT))
                         elif stat == True and NLOS == True:
                             print("Warning the tag is out of the LOS ")
+                            Tag_loc_prior_list.append(X_est)
+                            Tag_loc_post_list.append(X_est)
                         elif stat == False and NLOS == True:
                             print("Warning the tag has passed out of the LOS! The Kalman Gain remains {0} The Pc is still {1} and the Estimated State is {2}".format(Kg,Pc,X_est))
+                            Tag_loc_prior_list.append(X_est)
+                            Tag_loc_post_list.append(X_est)
                             ## consider resetting the Kalman gain and process covaraince values differently
                         KG_list.append(Kg)
                         PC_list.append(Pc)
@@ -340,6 +343,6 @@ if __name__ == "__main__":
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
         time.sleep(.5)
-    dildo = {'Obs_Position':tag_pos_list,'predicted_state':Tag_loc_prior_list:'Updated State':Tag_loc_post_list,'Kalman Gain':Kg,'Process_Covariance':PC,'QF': QF_list, 'Accel': Accel_list, 'Datetime':Date_list}
+    dildo = {'Obs_Position':tag_pos_list,'predicted_state':Tag_loc_prior_list:'Updated State':Tag_loc_post_list,'Kalman Gain':Kg,'Process_Covariance':PC,'QF': QF_list, 'Accel': Accel_list, 'Datetime':Date_list, 'Dt':dT_list}
     df = pd.DataFrame(data = dildo)
     df.to_csv(file_name)
