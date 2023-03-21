@@ -18,7 +18,7 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
 """file_loc"""
 file_loc = r'home/pi/Desktop/Test03/hi.xlsx'
-file_name = r'1X0Y.csv'
+file_name = r'0dot5X8dot5Y.csv'
 file_pos = file_loc + file_name
 
 
@@ -26,10 +26,10 @@ file_pos = file_loc + file_name
 A = np.array([[1,0],[0,1]]) # A matrix for converting state model
 At= np.transpose(A) # Transpose of matrix A
 B = np.array([[.5,0],[.5,0]],dtype=float) # B matrix for converting control matrix
-W = np.array([[35],[35]])# Predict State error matrix
-Q = np.array([[21],[21]]) #Error in the Predict State Matrix
-R = np.array([[-50],[-50]]) #Measurment Uncertainty Matrix
-Pc = np.array([[.05,0.0],[0.0,.05]])#Process Uncertainty Matrix
+W = np.array([[-.25],[.2]])# Predict State error matrix
+Q = np.array([[.1],[.1]]) #Error in the Predict State Matrix
+R = np.array([[.05],[.05]]) #Measurment Uncertainty Matrix
+Pc = np.array([[.25,0.0],[0.0,.25]])#Process Uncertainty Matrix
 I = np.array([[1,0],[0,1]]) # Identity Matrix
 H = np.array([[1,0],[0,1]]) #Kalman Gain Conversion Matrix
 C = np.array([[1,0],[0,1]]) #Measurement to Observation matrix
@@ -145,9 +145,8 @@ def sort_qf(line):
     Line = line.split(" ")
     Line = Line[1:]
     Qf = int((Line[3].strip('qf:')))
-    Qf = Qf + 23
-    if (iterat >= 14) and (iterat <=28):
-        Qf = 0
+    if (iterat< 12) and (Qf == 0):
+        Qf = Qf + 12
     Qf_list.append(Qf)
     if iterat > 11:
         if (Qf_list[iterat-1]) == 0 and (Qf_list[iterat-2]) == 0 and (Qf_list[iterat-3])  == 0:
@@ -167,8 +166,8 @@ def tag_decode(line):
     global iterat
     Line = line.split()
     Line = Line[1:]
-    X_pos = round(float((Line[0].strip('x:'))),4)
-    Y_pos = round(float((Line[1].strip('y:'))),4)
+    X_pos = round(float((Line[0].strip('x:'))),4)*1e-3 - .25
+    Y_pos = round(float((Line[1].strip('y:'))),4)*1e-3 + 0.0
     tag_loc  = [X_pos, Y_pos]
     if Qf == 0 and iterat <=10:
         iterat=0
@@ -187,7 +186,7 @@ observed tag_loc
 def predict_state(X_est, Accel):
     global dT
     B = np.array([[.5*(dT*dT),0],[0,.5*(dT*dT)]],dtype=float)
-    X_est = np.dot(A,(X_est)) + (np.dot(B,Accel))*1e3
+    X_est = np.dot(A,(X_est)) + (np.dot(B,Accel)) + W
     return(X_est)
 
 """
@@ -279,14 +278,14 @@ def det_stat(tag_loc,Accel):
         diff_pos_X = tag_loc_list[iterat-1][0] - tag_loc_list[iterat-2][0] # difference between the last two locations of tag in the X_coordinate
         diff_pos_Y = tag_loc_list[iterat-1][1] - tag_loc_list[iterat-2][1] # difference between the last two locations of tag in the X_coordinate
         print("The current x_position is {0} the previous x_postion is {1} ".format(tag_loc_list[iterat-1][0],tag_loc_list[iterat-2][0]))
-        print("The current x_position is {1} the previous x_postion is {1} ".format(tag_loc_list[iterat-1][1],tag_loc_list[iterat-2][1]))
-        if (abs(diff_pos_X) < 5 and abs(diff_pos_Y) < 5 and abs(Accel[0]) < .05  and abs(Accel[1]) <.05):
+        print("The current y_position is {1} the previous y_postion is {1} ".format(tag_loc_list[iterat-1][1],tag_loc_list[iterat-2][1]))
+        if (abs(diff_pos_X) < 25 and abs(diff_pos_Y) < 25 and abs(Accel[0]) < .1  and abs(Accel[1]) <.1):
             stat = True
         else:
             stat = False
 
 if __name__ == "__main__":
-    while (TC < 50):
+    while (TC < 90):
         TC+=1
         time_now = datetime.datetime.now().strftime("%H:%M:%S")
         accel = get_accel()
@@ -314,6 +313,7 @@ if __name__ == "__main__":
                         if stat == True:
                             Kg = kalman_gain(Pc)
                             print("As the AV is stationary the tag's position remains estimated at {0} the Pc remains {1} and Kalman Gain Remains at {2}".format(X_est,Pc,Kg))
+                            X_est = X_est
                             Tag_loc_prior_list.append(X_est)
                         else:
                             X_est = predict_state(X_est,accel)
@@ -334,12 +334,15 @@ if __name__ == "__main__":
                             Tag_loc_post_list.append(X_est)
                             print("Warning the tag has passed out of the LOS! The Kalman Gain remains {0} The Pc is still {1} and the Estimated State is {2}".format(Kg,Pc,X_est))
                             ## consider resetting the Kalman gain and process covaraince values differently
+                        elif stat == True and NLOS == False:
+                            
+                            Tag_loc_post_list.append(X_est)
                         KG_list.append(Kg)
                         PC_list.append(Pc)
         except KeyboardInterrupt:
                 print('Error! Keyboard interrupt detected, now closing ports! ')
                 ser.close()
         time.sleep(.5)
-    dildo = {'Obs_Position':Tag_pos_list,'Predicted State':Tag_loc_prior_list,'Kalman Gain':KG_list,'Process_Covariance':PC_list,'QF': QF_list, 'Accel': Accel_list, 'Datetime':Date_list, 'Dt':dT_list}
+    dildo = {'Obs_Position':Tag_pos_list,'Predicted State':Tag_loc_prior_list,'Updated_State':Tag_loc_post_list,'Kalman Gain':KG_list,'Process_Covariance':PC_list,'QF': QF_list, 'Accel': Accel_list, 'Datetime':Date_list, 'Dt':dT_list}
     df = pd.DataFrame(data = dildo)
     df.to_csv(file_name)
