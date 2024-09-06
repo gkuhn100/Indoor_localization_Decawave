@@ -53,10 +53,15 @@ print('')
 ## Function to print the Acceleration of the tag in the x and y coordinates
 def get_accel():
     accel = sense.get_accelerometer_raw()
+<<<<<<< Updated upstream
     X = accel['x'] * 9.81 - 0.062
     X = round(X,3)
     Y = accel['y'] * 9.81 + 0.968
     Y = round(Y,3)
+=======
+    X = round(accel['x'],3) * 9.81
+    Y = round(accel['y'],3) * 9.81
+>>>>>>> Stashed changes
     Accel = [X,Y]
     return(Accel)
 
@@ -188,7 +193,11 @@ if __name__ == "__main__":
             tag_lec = tag2.readline()
             sort_lec(tag_lec)
         if count == 3 and init == False:
+<<<<<<< Updated upstream
              num_anchor=print_anchor(tag_lec)
+=======
+             print_anchor(tag_lec)
+>>>>>>> Stashed changes
              tag2.write("lec\r".encode())
              print("\n")
              init = True
